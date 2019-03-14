@@ -1,4 +1,4 @@
-# svre
+# SVRE
 Structural Variation detection using Relative Entropy
 SVRE is a program that predicts structural variations (deletions, duplications, inversions, etc.) in a genome. One of the nice things about SVRE is that it has relatively low background noise levels, and thus predictions are relatively easy to identify visually from the visualizations that are created.
 SVRE is designed to work with paired-end short read sequencing data. The algorithm behind how SVRE works is based on information theory and relative entropy.
@@ -13,6 +13,7 @@ The following perl modules are required:
 * Math::CDF
 * Math::Round
 * Math::Trig
+
 The following additional software is required (and to be present on your default path):
 * samtools
 * Rscript
@@ -25,11 +26,11 @@ Make sure you have sorted and indexed your bam files.
 ```
 svre.pl -r1 <R1 bam file> -r2 <R2 bam file> -ori FR -output <output_prefix>
 ```
-Then take a look at the output_prefix_graph.png image.
+Then take a look at the `output_prefix_graph.png` image.
 
 # Basic background
 SVRE requires two bam files as input.
-These bam files should be created with either bwa or bowtie (version 1 or 2), as some knowledge of the mapping flags is required. We recommend bwa 0.7.10 or above.
+These bam files should be created with either `bwa` or `bowtie` (version 1 or 2), as some knowledge of the mapping flags is required. We recommend `bwa` 0.7.10 or above.
 Because most mappers actually use mapping distances to choose between possibilities for mapping position (i.e. they make assumptions about the distribution of the mapping distances), SVRE requires that each read gets mapped singly. Therefore, you need to map the R1 reads by themselves, and then separately map the R2 reads by themselves. These files are then the input to SVRE.
 SVRE is also designed as a method that has good sensitivity, but this relies on having a good reference genome. Using a different reference, even from the same species, can degrade the signal to noise ratio dramatically.
 As read length has increased with advances in second-generation sequencing technology, sequencing accuracy still often is lower towards the end of a read than at the beginning. To maintain sensitivity, SVRE only uses reads that map with 100% identity. This can filter out many reads if your read length is quite long. For most bacterial genomes, a good balance therefore is to trim your reads to the first 75 bp (or to trim by quality to this length). Then perform the mapping.
