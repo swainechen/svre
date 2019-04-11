@@ -69,8 +69,8 @@ bwa aln reference.fna R1.fastq -f R1.sai
 bwa aln reference.fna R2.fastq -f R2.sai
 bwa samse reference.fna R1.sai R1.fastq | samtools view -bS - > R1.bam
 bwa samse reference.fna R2.sai R2.fastq | samtools view -bS - > R2.bam
-samtools sort R1.bam -o R1-sort
-samtools sort R2.bam -o R2-sort
+samtools sort R1.bam -o R1-sort.bam
+samtools sort R2.bam -o R2-sort.bam
 samtools index R1-sort.bam
 samtools index R2-sort.bam
 svre.pl -r1 R1-sort.bam -r2 R2-sort.bam -ori FR -output svre_results
