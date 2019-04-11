@@ -65,8 +65,8 @@ Let's say we have all this in a single directory:
 Then we can do the following:
 ```
 bwa index reference.fna
-bwa aln reference.fna R1.fastq > R1.sai
-bwa aln reference.fna R2.fastq > R2.sai
+bwa aln reference.fna R1.fastq -f R1.sai
+bwa aln reference.fna R2.fastq -f R2.sai
 bwa samse reference.fna reference.fna R1.sai R1.fastq | samtools view -bS - > R1.bam
 bwa samse reference.fna reference.fna R2.sai R2.fastq | samtools view -bS - > R2.bam
 samtools sort R1.bam R1-sort
