@@ -5,6 +5,13 @@ SVRE is a program that predicts structural variations (deletions, duplications, 
 
 SVRE is designed to work with paired-end short read sequencing data. The algorithm behind how SVRE works is based on information theory and relative entropy.
 
+# I'm in a hurry
+Make sure you have sorted and indexed your bam files.
+```
+svre.pl -r1 <R1 bam file> -r2 <R2 bam file> -ori FR -output <output_prefix>
+```
+Then take a look at the `output_prefix_graph.png` image.
+
 # Prerequisites
 The following perl modules are required:
 * Cwd
@@ -23,12 +30,21 @@ The following additional software is required (and to be present on your default
 # Installation
 There are only two pieces for this program - the main `svre.pl` perl script, and the `sv.pm` perl module. The script only needs to be executable (typically `chmod +x` on a \*nix system). `sv.pm` must be available - usually in linux this can be done by making sure it's in a directory that is found in your `PERL5LIB` environment variable (or adding the path to the folder containing `sv.pm` to that variable).
 
-# I'm in a hurry
-Make sure you have sorted and indexed your bam files.
+# Installation Recipe
+This should get you up and running on a base Ubuntu 18.04 (tested on AWS AMI `ami-0dad20bd1b9c8c004` (Canonical, Ubuntu, 18.04 LTS, amd64 bionic image build on 2019-02-12)).
 ```
-svre.pl -r1 <R1 bam file> -r2 <R2 bam file> -ori FR -output <output_prefix>
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install make gcc bwa samtools r-base-core libmath-round-perl
+sudo cpan -i Math::CDF
+cd /usr/local/src
+sudo git clone https://github.com/swainechen/svre
+sudo mkdir /usr/local/lib/site_perl
+sudo ln -s /usr/local/src/svre/sv.pm /usr/local/lib/site_perl
+sudo chmod +x /usr/local/src/svre/svre.pl
+sudo ln -s /usr/local/src/svre/svre.pl /usr/local/bin
 ```
-Then take a look at the `output_prefix_graph.png` image.
+Then the example below should run (you need your own reference genome and fastq files).
 
 # Basic background
 SVRE requires two bam files as input.
