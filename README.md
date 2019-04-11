@@ -31,7 +31,7 @@ The following additional software is required (and to be present on your default
 There are only two pieces for this program - the main `svre.pl` perl script, and the `sv.pm` perl module. The script only needs to be executable (typically `chmod +x` on a \*nix system). `sv.pm` must be available - usually in linux this can be done by making sure it's in a directory that is found in your `PERL5LIB` environment variable (or adding the path to the folder containing `sv.pm` to that variable).
 
 # Installation Recipe
-This should get you up and running on a base Ubuntu 18.04 (tested on AWS AMI `ami-0dad20bd1b9c8c004` (Canonical, Ubuntu, 18.04 LTS, amd64 bionic image build on 2019-02-12)).
+This should get you up and running on a base Ubuntu 18.04 (tested on AWS AMI `ami-0dad20bd1b9c8c004` (Canonical, Ubuntu, 18.04 LTS, amd64 bionic image build on 2019-02-12)). Run these commands individually, for things like apt-get and cpan you'll have to respond to some prompts.
 ```
 sudo apt-get update
 sudo apt-get upgrade
