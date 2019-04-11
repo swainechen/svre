@@ -67,8 +67,8 @@ Then we can do the following:
 bwa index reference.fna
 bwa aln reference.fna R1.fastq -f R1.sai
 bwa aln reference.fna R2.fastq -f R2.sai
-bwa samse reference.fna reference.fna R1.sai R1.fastq | samtools view -bS - > R1.bam
-bwa samse reference.fna reference.fna R2.sai R2.fastq | samtools view -bS - > R2.bam
+bwa samse reference.fna R1.sai R1.fastq | samtools view -bS - > R1.bam
+bwa samse reference.fna R2.sai R2.fastq | samtools view -bS - > R2.bam
 samtools sort R1.bam R1-sort
 samtools sort R2.bam R2-sort
 samtools index R1-sort.bam
