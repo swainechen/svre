@@ -75,6 +75,7 @@ samtools index R1-sort.bam
 samtools index R2-sort.bam
 svre.pl -r1 R1-sort.bam -r2 R2-sort.bam -ori FR -output svre_results
 ```
+The SVRE command ends up taking about 10 minutes and 6GB RAM on a relatively modern computer (AWS t2.xlarge) on a data set of ~2 million paired end reads mapped to a 5 Mbp genome.
 
 # Output
 Three files are output by the svre.pl program (svre_results is used here based on the example above, set this with the -output parameter):
