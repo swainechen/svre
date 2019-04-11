@@ -62,15 +62,15 @@ Let's say we have all this in a single directory:
 * `R1.fastq` - first read of paired end sequencing data - trimmed to 75bp
 * `R2.fastq` - second read of paired end sequencing data - trimmed to 75bp
 
-Then we can do the following:
+Then we can do the following (note samtools syntax has changed a bit, this will work for version 1.7):
 ```
 bwa index reference.fna
 bwa aln reference.fna R1.fastq -f R1.sai
 bwa aln reference.fna R2.fastq -f R2.sai
 bwa samse reference.fna R1.sai R1.fastq | samtools view -bS - > R1.bam
 bwa samse reference.fna R2.sai R2.fastq | samtools view -bS - > R2.bam
-samtools sort R1.bam R1-sort
-samtools sort R2.bam R2-sort
+samtools sort R1.bam -o R1-sort
+samtools sort R2.bam -o R2-sort
 samtools index R1-sort.bam
 samtools index R2-sort.bam
 svre.pl -r1 R1-sort.bam -r2 R2-sort.bam -ori FR -output svre_results
