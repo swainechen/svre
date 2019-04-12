@@ -8,6 +8,7 @@ SVRE is designed to work with paired-end short read sequencing data. The algorit
 The good sensitivity and low background were important for concluding that the Fim recombinases regulating the inversion of the Type 1 pilus _fimS_ switch are very specific for their inversion targets. If this program is useful for you, please cite this paper:
 
 `"Comprehensive Identification of Fim-Mediated Inversions in Uropathogenic Escherichia coli with Structural Variation Detection Using Relative Entropy." Russell CW, Sukumaran R, Liow LT, Periaswamy B, Rafee S, Chee YC, Chen SL. mSphere. 2019 Apr 10;4(2). pii: e00693-18.`
+
 https://doi.org/10.1128/mSphere.00693-18
 
 # I'm in a hurry
