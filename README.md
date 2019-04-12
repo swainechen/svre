@@ -84,7 +84,7 @@ svre.pl -r1 R1-sort.bam -r2 R2-sort.bam -ori FR -output svre_results
 The SVRE command ends up taking about 10 minutes and 6GB RAM on a relatively modern computer (AWS t2.xlarge) on a data set of ~2 million paired end reads mapped to a 5 Mbp genome.
 
 # Output
-Three files are output by the svre.pl program (svre_results is used here based on the example above, set this with the -output parameter):
+One image file and three text files are output by the svre.pl program (svre_results is used here based on the example above, set this with the -output parameter):
 * `svre_results_graph.png` - This gives an easy to view image of the relative entropies across all windows. Spikes in the relative entropy graph correspond with predicted structural variations.
 * `svre_results_re.txt` - This gives summaries of all the windows and relative entropies.
 * `svre_results_detail.txt` - This gives details of all the windows that were deemed to be significant.
