@@ -200,16 +200,24 @@ my $mapper_version = "";
 my $mapper_command_line = "";
 
 if ($r1 =~ /\.sam$/i) {
-  @samheader1 = `samtools view -SH $r1`;
+  open(my $ph, "-|", "samtools", "view", "-SH", $r1) or die "Can't open samtools: $!\n";
+  @samheader1 = <$ph>;
+  close($ph);
 } elsif ($r1 =~ /\.bam$/i) {
-  @samheader1 = `samtools view -H $r1`;
+  open(my $ph, "-|", "samtools", "view", "-H", $r1) or die "Can't open samtools: $!\n";
+  @samheader1 = <$ph>;
+  close($ph);
 } else {
   die "Can't figure out $r1 file type (sam/bam)\n";
 }
-if ($r1 =~ /\.sam$/i) {
-  @samheader2 = `samtools view -SH $r2`;
-} elsif ($r1 =~ /\.bam$/i) {
-  @samheader2 = `samtools view -H $r2`;
+if ($r2 =~ /\.sam$/i) {
+  open(my $ph, "-|", "samtools", "view", "-SH", $r2) or die "Can't open samtools: $!\n";
+  @samheader2 = <$ph>;
+  close($ph);
+} elsif ($r2 =~ /\.bam$/i) {
+  open(my $ph, "-|", "samtools", "view", "-H", $r2) or die "Can't open samtools: $!\n";
+  @samheader2 = <$ph>;
+  close($ph);
 } else {
   die "Can't figure out $r2 file type (sam/bam)\n";
 }
@@ -308,9 +316,9 @@ $read = {};	# keyed with read name, then r1/r2, ref/length/pos
 $read_length_total = 0;
 $filter = 0;
 if (-B $r1) {
-  open R, "samtools view $r1|";
+  open R, "-|", "samtools", "view", $r1;
 } else {
-  open R, "<$r1";
+  open R, "<", $r1;
 }
 while (<R>) {
 #  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
@@ -351,9 +359,9 @@ while (<R>) {
 close R;
   
 if (-B $r2) {
-  open R, "samtools view $r2|";
+  open R, "-|", "samtools", "view", $r2;
 } else {
-  open R, "<$r2";
+  open R, "<", $r2;
 }
 while (<R>){
 #  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
@@ -780,9 +788,9 @@ if ($pval) {
   $info_freq = sv::bootstrap($global_dist, $bootstrap, $cov_bin, $quiet);
 }
 
-open I, ">$output_ic" || die "Cannot open file $output_ic: $!\n";
+open(I, ">", $output_ic) || die "Cannot open file $output_ic: $!\n";
 print I join ("\t", "# Chromosome", "Bin coord", "Bin size (reads)", "Bin size (bp)", "Relative entropy", "Adjusted P-value"), "\n";
-open D, ">$output_detail" || die "Cannot open file $output_detail: $!\n";
+open(D, ">", $output_detail) || die "Cannot open file $output_detail: $!\n";
 print D "### $command_line\n";
 print D "### Coverage bin: $cov_bin; y-window: $ywin\n";
 print D join ("\t", "## Chromosome", "Bin coord", "Bin size (reads)", "Bin size (bp)"), "\n";
@@ -889,7 +897,7 @@ $refsizes = join(",", @refsize);
 
 #=begin GHOSTCODE
 $r_file = $tempdir."/r";
-open R, ">$r_file";
+open R, ">", $r_file;
 if ($pval) {
 print R <<__END__;
 ref <- c($refnames)
@@ -978,7 +986,7 @@ __END__
 }
 close R;
 #system "$R_command CMD BATCH --slave $r_file $tempdir/Rout";
-system "$R_command $r_file";
+system($R_command, $r_file);
 #=end GHOSTCODE
 
 #=cut
@@ -996,7 +1004,7 @@ system "$R_command $r_file";
 # false positives (too many spread out)
 # widen all the ranges out by bin size at this point
 if ($pval) {
-  open S, ">$output_list";
+  open S, ">", $output_list;
   print S "## Individual SV calls\n";
   print S join ("\t", "# Chromosome", "Bin", "Entropy", "Adjusted P", "SV:target region(prob)"), "\n";
   my $merge_i = 0;
