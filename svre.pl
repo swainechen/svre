@@ -315,12 +315,13 @@ $read = {};	# keyed with read name, then r1/r2, ref/length/pos
 @dist_total = ();
 $read_length_total = 0;
 $filter = 0;
+my $rh1;
 if (-B $r1) {
-  open R, "-|", "samtools", "view", $r1;
+  open($rh1, "-|", "samtools", "view", $r1);
 } else {
-  open R, "<", $r1;
+  open($rh1, "<", $r1);
 }
-while (<R>) {
+while (<$rh1>) {
 #  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
   if ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+mem/) {
     next if $_ !~ /NM\:i\:0/;
@@ -356,14 +357,15 @@ while (<R>) {
     $read->{$f[0]}->{r1}->{pos} = $f[3];
   }
 }
-close R;
+close $rh1;
   
+my $rh2;
 if (-B $r2) {
-  open R, "-|", "samtools", "view", $r2;
+  open($rh2, "-|", "samtools", "view", $r2);
 } else {
-  open R, "<", $r2;
+  open($rh2, "<", $r2);
 }
-while (<R>){
+while (<$rh2>){
 #  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
   if ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+mem/) {
     next if $_ !~ /NM\:i\:0/;
@@ -398,7 +400,7 @@ while (<R>){
     $read->{$f[0]}->{r2}->{pos} = $f[3];
   }
 }
-close R;
+close $rh2;
 
 foreach $key (keys %$read) {
   if (defined $read->{$key}->{r1}->{ref} && defined $read->{$key}->{r2}->{ref}) {
@@ -788,14 +790,14 @@ if ($pval) {
   $info_freq = sv::bootstrap($global_dist, $bootstrap, $cov_bin, $quiet);
 }
 
-open(I, ">", $output_ic) || die "Cannot open file $output_ic: $!\n";
-print I join ("\t", "# Chromosome", "Bin coord", "Bin size (reads)", "Bin size (bp)", "Relative entropy", "Adjusted P-value"), "\n";
-open(D, ">", $output_detail) || die "Cannot open file $output_detail: $!\n";
-print D "### $command_line\n";
-print D "### Coverage bin: $cov_bin; y-window: $ywin\n";
-print D join ("\t", "## Chromosome", "Bin coord", "Bin size (reads)", "Bin size (bp)"), "\n";
-print D "## Mate pair location ranges are clustered if within $range_cluster bp\n";
-print D join ("\t", "# Distance", "Read Pairs", "Expected", "Observed", "Relative Entropy"), "\n";
+open(my $ih, ">", $output_ic) || die "Cannot open file $output_ic: $!\n";
+print $ih join ("\t", "# Chromosome", "Bin coord", "Bin size (reads)", "Bin size (bp)", "Relative entropy", "Adjusted P-value"), "\n";
+open(my $dh, ">", $output_detail) || die "Cannot open file $output_detail: $!\n";
+print $dh "### $command_line\n";
+print $dh "### Coverage bin: $cov_bin; y-window: $ywin\n";
+print $dh join ("\t", "## Chromosome", "Bin coord", "Bin size (reads)", "Bin size (bp)"), "\n";
+print $dh "## Mate pair location ranges are clustered if within $range_cluster bp\n";
+print $dh join ("\t", "# Distance", "Read Pairs", "Expected", "Observed", "Relative Entropy"), "\n";
 $pvalue = {};
 my @pv = ();
 my @ent = ();
@@ -845,27 +847,27 @@ print STDERR "Generating output:\n";
 foreach $ref (@reforder) {
   print STDERR "  $ref ... " if !$quiet;
   foreach $bin (sort {$a <=> $b} keys %{$ri->{$ref}}) {
-    print I join ("\t",
+    print $ih join ("\t",
       $ref,
       $bin,
       $ri->{$ref}->{$bin}->{rcount},
       $ri->{$ref}->{$bin}->{binsize},
       $ri->{$ref}->{$bin}->{entropy});
     if ($pval) {
-      print I "\t", $pvalue->{$ri->{$ref}->{$bin}->{entropy}}, "\n";
+      print $ih "\t", $pvalue->{$ri->{$ref}->{$bin}->{entropy}}, "\n";
     } else {
-      print I "\t0\n";
+      print $ih "\t0\n";
     }
     if ($pval && $pvalue->{$ri->{$ref}->{$bin}->{entropy}} < $fdr) {
       $significant->{$ref}->{$bin} = $ri->{$ref}->{$bin};
-      print D join ("\t", "## $ref", $bin, $ri->{$ref}->{$bin}->{rcount}, $ri->{$ref}->{$bin}->{binsize}), "\n";
+      print $dh join ("\t", "## $ref", $bin, $ri->{$ref}->{$bin}->{rcount}, $ri->{$ref}->{$bin}->{binsize}), "\n";
       @pair = ();
       my $out = {};
       foreach $dist (sort keysort keys %{$count->{$ref}->{$bin}}) {
         next if $dist eq "pair";
         next if $dist eq "rcount";
         next if $dist eq "pos";
-        print D join ("\t",
+        print $dh join ("\t",
           $dist,
           $count->{$ref}->{$bin}->{$dist},
           $global_dist->{$dist},
@@ -878,115 +880,132 @@ foreach $ref (@reforder) {
       $pair = "";
       if (scalar(@pair) != 0) {
         $pair = sv::range(\@pair, $range_cluster); #collapse range within 50bp
-        print D "# Pairs: $pair\n";
+        print $dh "# Pairs: $pair\n";
       } else {
-        print D "# Pairs: none\n";
+        print $dh "# Pairs: none\n";
       }
     }
   }
   print STDERR "done\n" if !$quiet;
 }
-close I;
+close $ih;
 
 #@@@@@@@@@@@@@@@@@@
 # Graphical output
 #@@@@@@@@@@@@@@@@@@
-$refnames = join("\",\"", @reforder);
-$refnames = "\"".$refnames."\"";
+$refnames = join(",", @reforder);
 $refsizes = join(",", @refsize);
 
 #=begin GHOSTCODE
 $r_file = $tempdir."/r";
-open R, ">", $r_file;
+open(my $rh, ">", $r_file);
 if ($pval) {
-print R <<__END__;
-ref <- c($refnames)
-refsize <- c($refsizes)
-x <- read.table(\"$output_ic\", sep="\\t", comment.char="", header=T)
+print $rh <<'__END__';
+args <- commandArgs(trailingOnly = TRUE)
+refnames_str <- args[1]
+refsizes_str <- args[2]
+output_ic <- args[3]
+output_png <- args[4]
+qvalue <- as.numeric(args[5])
+
+ref <- unlist(strsplit(refnames_str, ","))
+refsize <- as.numeric(unlist(strsplit(refsizes_str, ",")))
+
+x <- read.table(output_ic, sep="\t", comment.char="", header=T)
 np <- length(ref) * 2
 s <- round(log10(refsize))
 s[1] <- s[1] + 1.5
-qvalue <- $fdr
 ifelse(length(ref) > 1, linepos <- rep(c(3,2,2,3), length(ref)/2), linepos <- 2)
-refpos <- rep(c(max(range(x\$Relative.entropy)), max(range(x\$Relative.entropy))-0.1), length(ref))
-png(\"$output_png\", width=1000, height=700)
+refpos <- rep(c(max(range(x$Relative.entropy)), max(range(x$Relative.entropy))-0.1), length(ref))
+png(output_png, width=1000, height=700)
 layout(matrix(1:np,2,np/2,byrow=TRUE),s); par(oma=c(3,2,3,4));
 for (i in 1:length(ref)) {
   ifelse(i == 1, par(mar=c(0,2,4,0)), par(mar=c(0,0,4,0)))
-  if (nrow(x[x\$Bin.coord >=0 & x\$X..Chromosome == ref[i],]) > 0) {
-    plot(x[x\$Bin.coord >=0 & x\$X..Chromosome == ref[i], c(\"Bin.coord\",\"Relative.entropy\")], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=range(x\$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
-    points(x[x\$X..Chromosome == ref[i] & x\$Adjusted.P.value <= qvalue & x\$Bin.coord >= 0, c(\"Bin.coord\",\"Relative.entropy\")], cex=0.5, pch=8, col="red")
+  if (nrow(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i],]) > 0) {
+    plot(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i], c("Bin.coord","Relative.entropy")], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+    points(x[x$X..Chromosome == ref[i] & x$Adjusted.P.value <= qvalue & x$Bin.coord >= 0, c("Bin.coord","Relative.entropy")], cex=0.5, pch=8, col="red")
   } else {
-    plot(0, 0, cex=0, xlim=c(0, refsize[i]), ylim=range(x\$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+    plot(0, 0, cex=0, xlim=c(0, refsize[i]), ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
   }
   if (i %% 2 == 1) {
     mtext(ref[i], side=3, cex=0.75, line=linepos[i])
   } else {
     axis(3, xlim=c(0, refsize[i]), cex.axis=1.25)
   }
-  ifelse(i == 1, axis(2, ylim=range(x\$Relative.entropy), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=range(x\$Relative.entropy), cex.axis=1.25), NA))
+  ifelse(i == 1, axis(2, ylim=range(x$Relative.entropy), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=range(x$Relative.entropy), cex.axis=1.25), NA))
 } 
 for (i in 1:length(ref)) {
   ifelse(i == 1, par(mar=c(4,2,0,0)), par(mar=c(4,0,0,0)))
-  if (nrow(x[x\$Bin.coord < 0 & x\$X..Chromosome == ref[i],]) > 0) {
-    plot(-x\$Bin.coord[x\$Bin.coord < 0 & x\$X..Chromosome == ref[i]], x\$Relative.entropy[x\$Bin.coord < 0 & x\$X..Chromosome == ref[i]], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=rev(range(x\$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
-    points(-x\$Bin.coord[x\$X..Chromosome == ref[i] & x\$Adjusted.P.value <= qvalue & x\$Bin.coord < 0], x\$Relative.entropy[x\$X..Chromosome == ref[i] & x\$Adjusted.P.value <= qvalue & x\$Bin.coord < 0], cex=0.5, pch=8, col="red")
+  if (nrow(x[x$Bin.coord < 0 & x$X..Chromosome == ref[i],]) > 0) {
+    plot(-x$Bin.coord[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], x$Relative.entropy[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=rev(range(x$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+    points(-x$Bin.coord[x$X..Chromosome == ref[i] & x$Adjusted.P.value <= qvalue & x$Bin.coord < 0], x$Relative.entropy[x$X..Chromosome == ref[i] & x$Adjusted.P.value <= qvalue & x$Bin.coord < 0], cex=0.5, pch=8, col="red")
   } else {
-    plot(0, 0, cex=0, xlim=c(0, refsize[i]), ylim=range(x\$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+    plot(0, 0, cex=0, xlim=c(0, refsize[i]), ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
   }
   if (i %% 2 == 0) {
     mtext(ref[i], side=1, cex=0.75, line=linepos[i])
   } else {
     axis(1, xlim=c(0, refsize[i]), cex.axis=1.25)
   }
-  ifelse(i == 1, axis(2, ylim=rev(range(x\$Relative.entropy)), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=rev(range(x\$Relative.entropy)), cex.axis=1.25), NA))
+  ifelse(i == 1, axis(2, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25), NA))
 } 
-mtext(\"Forward strand position\", side=3, line=1, outer=TRUE)
-mtext(\"Reverse strand position\", side=1, line=1, outer=TRUE)
-mtext(paste(\"RIC score (Q-value = \",qvalue,\")\"), side=2, line=0, cex=1.5, outer=TRUE)
+mtext("Forward strand position", side=3, line=1, outer=TRUE)
+mtext("Reverse strand position", side=1, line=1, outer=TRUE)
+mtext(paste("RIC score (Q-value = ",qvalue,")"), side=2, line=0, cex=1.5, outer=TRUE)
 dev.off()
 __END__
 } else {
-print R <<__END__;
-ref <- c($refnames)
-refsize <- c($refsizes)
-x <- read.table(\"$output_ic\")
+print $rh <<'__END__';
+args <- commandArgs(trailingOnly = TRUE)
+refnames_str <- args[1]
+refsizes_str <- args[2]
+output_ic <- args[3]
+output_png <- args[4]
+
+ref <- unlist(strsplit(refnames_str, ","))
+refsize <- as.numeric(unlist(strsplit(refsizes_str, ",")))
+
+x <- read.table(output_ic)
 np <- length(ref) * 2
 s <- round(log10(refsize))
 s[1] <- s[1] + 1.5
 ifelse(length(ref) > 1, linepos <- rep(c(3,2,2,3), length(ref)/2), linepos <- 2)
-refpos <- rep(c(max(range(x\$Relative.entropy)), max(range(x\$Relative.entropy))-0.1), length(ref)) 
-png(\"$output_png\", width=1000, height=700)
+refpos <- rep(c(max(range(x$Relative.entropy)), max(range(x$Relative.entropy))-0.1), length(ref))
+png(output_png, width=1000, height=700)
 layout(matrix(1:np,2,np/2,byrow=TRUE),s); par(oma=c(3,2,3,1));
 for (i in 1:length(ref)) {
   ifelse(i == 1, par(mar=c(0,2,4,0)), par(mar=c(0,0,4,0)))
-  plot(x[x\$Bin.coord >=0 & x\$X..Chromosome == ref[i], c(\"Bin.coord\",\"Relative.entropy\")], type="o", cex=0.5, ylim=range(x\$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+  plot(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i], c("Bin.coord","Relative.entropy")], type="o", cex=0.5, ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
   if (i %% 2 == 1) {
     mtext(ref[i], side=3, cex=0.75, line=linepos[i])
   } else {
-    axis(3, xlim=range(x\$Bin.coord[x\$X..Chromosome==ref[i] & x\$Bin.coord >=0]), cex.axis=1.25)
+    axis(3, xlim=range(x$Bin.coord[x$X..Chromosome==ref[i] & x$Bin.coord >=0]), cex.axis=1.25)
   }
-  ifelse(i == 1, axis(2, ylim=range(x\$Relative.entropy), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=range(x\$Relative.entropy), cex.axis=1.25), NA))
+  ifelse(i == 1, axis(2, ylim=range(x$Relative.entropy), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=range(x$Relative.entropy), cex.axis=1.25), NA))
 } 
 for (i in 1:length(ref)) {
   ifelse(i == 1, par(mar=c(4,2,0,0)), par(mar=c(4,0,0,0)))
-  plot(-x\$Bin.coord[x\$Bin.coord < 0 & x\$X..Chromosome == ref[i]], x\$Relative.entropy[x\$Bin.coord < 0 & x\$X..Chromosome == ref[i]], type="o", cex=0.5, ylim=rev(range(x\$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+  plot(-x$Bin.coord[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], x$Relative.entropy[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], type="o", cex=0.5, ylim=rev(range(x$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
   if (i %% 2 == 0) {
     mtext(ref[i], side=1, cex=0.75, line=linepos[i])
   } else {
-    axis(1, xlim=range(x\$Bin.coord[x\$X..Chromosome==ref[i] & x\$Bin.coord >=0]), cex.axis=1.25)
+    axis(1, xlim=range(x$Bin.coord[x$X..Chromosome==ref[i] & x$Bin.coord >=0]), cex.axis=1.25)
   }
-  ifelse(i == 1, axis(2, ylim=rev(range(x\$Relative.entropy)), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=rev(range(x\$Relative.entropy)), cex.axis=1.25), NA))
+  ifelse(i == 1, axis(2, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25), NA))
 } 
-mtext(\"Forward strand position\", side=3, line=1, outer=TRUE)
-mtext(\"Reverse strand position\", side=1, line=1, outer=TRUE)
-mtext(\"RIC score\", side=2, line=0, cex=1.5, outer=TRUE)
+mtext("Forward strand position", side=3, line=1, outer=TRUE)
+mtext("Reverse strand position", side=1, line=1, outer=TRUE)
+mtext("RIC score", side=2, line=0, cex=1.5, outer=TRUE)
 dev.off()
 __END__
 }
-close R;
+close $rh;
 #system "$R_command CMD BATCH --slave $r_file $tempdir/Rout";
-system($R_command, $r_file);
+if ($pval) {
+    system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png, $fdr);
+} else {
+    system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png);
+}
 #=end GHOSTCODE
 
 #=cut
@@ -1004,9 +1023,9 @@ system($R_command, $r_file);
 # false positives (too many spread out)
 # widen all the ranges out by bin size at this point
 if ($pval) {
-  open S, ">", $output_list;
-  print S "## Individual SV calls\n";
-  print S join ("\t", "# Chromosome", "Bin", "Entropy", "Adjusted P", "SV:target region(prob)"), "\n";
+  open(my $sh, ">", $output_list);
+  print $sh "## Individual SV calls\n";
+  print $sh join ("\t", "# Chromosome", "Bin", "Entropy", "Adjusted P", "SV:target region(prob)"), "\n";
   my $merge_i = 0;
   my $merge_sv = {};	# keyed on number, then type, confidence, bp1, bp2
 			# each bp has ref and coordinates expanded to ranges
@@ -1175,15 +1194,15 @@ if ($pval) {
       } else {
         $b_sign = -1;
       }
-      print S join ("\t", $ref,
+      print $sh join ("\t", $ref,
                           "$bin.." . ($bin + $b_sign * $ri->{$ref}->{$bin}->{binsize}),
                           $ri->{$ref}->{$bin}->{entropy},
                           $pvalue->{$ri->{$ref}->{$bin}->{entropy}},
                           join (";", @out)), "\n";
     }
   }
-  print S "## Combined SV calls\n";
-  print S join ("\t", "# Breakpoint 1", "Breakpoint 2", "Type", "Confidence"), "\n";
+  print $sh "## Combined SV calls\n";
+  print $sh join ("\t", "# Breakpoint 1", "Breakpoint 2", "Type", "Confidence"), "\n";
   my ($k, $l);
   my $collapsed = {};
   my $merged;
@@ -1255,13 +1274,13 @@ if ($pval) {
     }
   }
   foreach $k (sort {$merge_sv->{$a}->{sort} <=> $merge_sv->{$b}->{sort}} keys %{$merge_sv}) {
-    print S join ("\t", "$merge_sv->{$k}->{bp1}->{ref}:$merge_sv->{$k}->{bp1}->{coord}", "$merge_sv->{$k}->{bp2}->{ref}:$merge_sv->{$k}->{bp2}->{coord}", $merge_sv->{$k}->{type}, sv::geom_mean(@{$merge_sv->{$k}->{confidence}})), "\n";
+    print $sh join ("\t", "$merge_sv->{$k}->{bp1}->{ref}:$merge_sv->{$k}->{bp1}->{coord}", "$merge_sv->{$k}->{bp2}->{ref}:$merge_sv->{$k}->{bp2}->{coord}", $merge_sv->{$k}->{type}, sv::geom_mean(@{$merge_sv->{$k}->{confidence}})), "\n";
   }
+  close $sh;
 }
 $now = time - $now;
-printf D ("\n### Total running time: %02d:%02d:%02d\n", int($now/3600), int(($now % 3600)/60), int($now % 60));
-close D;
-close S;
+printf $dh ("\n### Total running time: %02d:%02d:%02d\n", int($now/3600), int(($now % 3600)/60), int($now % 60));
+close $dh;
 exit;
 
 sub keysort {
