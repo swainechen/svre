@@ -23,6 +23,7 @@ use File::Temp;
 use Math::Round;
 use Getopt::Long;
 use List::Util qw(min max sum);
+use File::Spec;
 
 #@@@@@@@@@@@
 # Variables 
@@ -69,10 +70,19 @@ my $ri = {};
 my $loopstart;
 my $loopend;
 my $use_translocation = 1;
+
+my $samtools_command = '';
+foreach my $p (split /:/, $ENV{PATH}) {
+    if (-x File::Spec->catfile($p, "samtools")) {
+        $samtools_command = File::Spec->catfile($p, "samtools");
+        last;
+    }
+}
+
 my $R_command = '';
 foreach my $p (split /:/, $ENV{PATH}) {
-    if (-x "$p/Rscript") {
-        $R_command = "$p/Rscript";
+    if (-x File::Spec->catfile($p, "Rscript")) {
+        $R_command = File::Spec->catfile($p, "Rscript");
         last;
     }
 }
@@ -148,6 +158,20 @@ GetOptions(
   "quiet" => \$quiet
 );
 
+if ($samtools_command eq '') {
+    die "Error: samtools not found in PATH. Please install samtools.\n";
+}
+if (! -x $samtools_command) {
+    die "Error: samtools command ($samtools_command) is not executable.\n";
+}
+
+if ($R_command eq '') {
+    die "Error: Rscript not found in PATH and not specified via -R_command. Please install R or specify the path to Rscript.\n";
+}
+if (! -x $R_command) {
+    die "Error: Rscript command ($R_command) is not executable.\n";
+}
+
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # Main input file check - otherwise help screen
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -205,24 +229,24 @@ my $mapper_version = "";
 my $mapper_command_line = "";
 
 if ($r1 =~ /\.sam$/i) {
-  open(my $ph, "-|", "samtools", "view", "-SH", "--", $r1) or die "Can't open samtools: $!\n";
+  open(my $ph, "-|", $samtools_command, "view", "-SH", "--", $r1) or die "Can't open samtools: $!\n";
   @samheader1 = <$ph>;
-  close($ph);
+  close($ph) or die "Error closing samtools pipe: $!\n";
 } elsif ($r1 =~ /\.bam$/i) {
-  open(my $ph, "-|", "samtools", "view", "-H", "--", $r1) or die "Can't open samtools: $!\n";
+  open(my $ph, "-|", $samtools_command, "view", "-H", "--", $r1) or die "Can't open samtools: $!\n";
   @samheader1 = <$ph>;
-  close($ph);
+  close($ph) or die "Error closing samtools pipe: $!\n";
 } else {
   die "Can't figure out $r1 file type (sam/bam)\n";
 }
 if ($r2 =~ /\.sam$/i) {
-  open(my $ph, "-|", "samtools", "view", "-SH", "--", $r2) or die "Can't open samtools: $!\n";
+  open(my $ph, "-|", $samtools_command, "view", "-SH", "--", $r2) or die "Can't open samtools: $!\n";
   @samheader2 = <$ph>;
-  close($ph);
+  close($ph) or die "Error closing samtools pipe: $!\n";
 } elsif ($r2 =~ /\.bam$/i) {
-  open(my $ph, "-|", "samtools", "view", "-H", "--", $r2) or die "Can't open samtools: $!\n";
+  open(my $ph, "-|", $samtools_command, "view", "-H", "--", $r2) or die "Can't open samtools: $!\n";
   @samheader2 = <$ph>;
-  close($ph);
+  close($ph) or die "Error closing samtools pipe: $!\n";
 } else {
   die "Can't figure out $r2 file type (sam/bam)\n";
 }
@@ -322,7 +346,7 @@ $read_length_total = 0;
 $filter = 0;
 my $rh1;
 if (-B $r1) {
-  open($rh1, "-|", "samtools", "view", "--", $r1) or die "Can't open samtools: $!\n";
+  open($rh1, "-|", $samtools_command, "view", "--", $r1) or die "Can't open samtools: $!\n";
 } else {
   open($rh1, "<", $r1) or die "Can't open $r1: $!\n";
 }
@@ -362,11 +386,11 @@ while (<$rh1>) {
     $read->{$f[0]}->{r1}->{pos} = $f[3];
   }
 }
-close $rh1;
+close $rh1 or die "Error closing r1 filehandle: $!\n";
   
 my $rh2;
 if (-B $r2) {
-  open($rh2, "-|", "samtools", "view", "--", $r2) or die "Can't open samtools: $!\n";
+  open($rh2, "-|", $samtools_command, "view", "--", $r2) or die "Can't open samtools: $!\n";
 } else {
   open($rh2, "<", $r2) or die "Can't open $r2: $!\n";
 }
@@ -405,7 +429,7 @@ while (<$rh2>){
     $read->{$f[0]}->{r2}->{pos} = $f[3];
   }
 }
-close $rh2;
+close $rh2 or die "Error closing r2 filehandle: $!\n";
 
 foreach $key (keys %$read) {
   if (defined $read->{$key}->{r1}->{ref} && defined $read->{$key}->{r2}->{ref}) {

@@ -332,7 +332,7 @@ sub null_distribution_from_file {
   my $total = 0;
   my $j = 0;
 
-  open(my $nh, "<", $file);
+  open(my $nh, "<", $file) or die "Cannot open file $file: $!\n";
   while(<$nh>){
     chomp;
     $j = int($_/$ywin) * $ywin;
