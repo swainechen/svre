@@ -69,8 +69,13 @@ my $ri = {};
 my $loopstart;
 my $loopend;
 my $use_translocation = 1;
-my $R_command = `which Rscript`;
-chomp $R_command;
+my $R_command = '';
+foreach my $p (split /:/, $ENV{PATH}) {
+    if (-x "$p/Rscript") {
+        $R_command = "$p/Rscript";
+        last;
+    }
+}
 
 # generic variables we use all the time and others
 my @f;
@@ -200,22 +205,22 @@ my $mapper_version = "";
 my $mapper_command_line = "";
 
 if ($r1 =~ /\.sam$/i) {
-  open(my $ph, "-|", "samtools", "view", "-SH", $r1) or die "Can't open samtools: $!\n";
+  open(my $ph, "-|", "samtools", "view", "-SH", "--", $r1) or die "Can't open samtools: $!\n";
   @samheader1 = <$ph>;
   close($ph);
 } elsif ($r1 =~ /\.bam$/i) {
-  open(my $ph, "-|", "samtools", "view", "-H", $r1) or die "Can't open samtools: $!\n";
+  open(my $ph, "-|", "samtools", "view", "-H", "--", $r1) or die "Can't open samtools: $!\n";
   @samheader1 = <$ph>;
   close($ph);
 } else {
   die "Can't figure out $r1 file type (sam/bam)\n";
 }
 if ($r2 =~ /\.sam$/i) {
-  open(my $ph, "-|", "samtools", "view", "-SH", $r2) or die "Can't open samtools: $!\n";
+  open(my $ph, "-|", "samtools", "view", "-SH", "--", $r2) or die "Can't open samtools: $!\n";
   @samheader2 = <$ph>;
   close($ph);
 } elsif ($r2 =~ /\.bam$/i) {
-  open(my $ph, "-|", "samtools", "view", "-H", $r2) or die "Can't open samtools: $!\n";
+  open(my $ph, "-|", "samtools", "view", "-H", "--", $r2) or die "Can't open samtools: $!\n";
   @samheader2 = <$ph>;
   close($ph);
 } else {
@@ -317,9 +322,9 @@ $read_length_total = 0;
 $filter = 0;
 my $rh1;
 if (-B $r1) {
-  open($rh1, "-|", "samtools", "view", $r1);
+  open($rh1, "-|", "samtools", "view", "--", $r1) or die "Can't open samtools: $!\n";
 } else {
-  open($rh1, "<", $r1);
+  open($rh1, "<", $r1) or die "Can't open $r1: $!\n";
 }
 while (<$rh1>) {
 #  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
@@ -361,9 +366,9 @@ close $rh1;
   
 my $rh2;
 if (-B $r2) {
-  open($rh2, "-|", "samtools", "view", $r2);
+  open($rh2, "-|", "samtools", "view", "--", $r2) or die "Can't open samtools: $!\n";
 } else {
-  open($rh2, "<", $r2);
+  open($rh2, "<", $r2) or die "Can't open $r2: $!\n";
 }
 while (<$rh2>){
 #  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
@@ -898,7 +903,7 @@ $refsizes = join(",", @refsize);
 
 #=begin GHOSTCODE
 $r_file = $tempdir."/r";
-open(my $rh, ">", $r_file);
+open(my $rh, ">", $r_file) or die "Cannot open $r_file: $!\n";
 if ($pval) {
 print $rh <<'__END__';
 args <- commandArgs(trailingOnly = TRUE)
@@ -1002,9 +1007,9 @@ __END__
 close $rh;
 #system "$R_command CMD BATCH --slave $r_file $tempdir/Rout";
 if ($pval) {
-    system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png, $fdr);
+    system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png, $fdr) == 0 or die "Rscript failed: $!\n";
 } else {
-    system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png);
+    system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png) == 0 or die "Rscript failed: $!\n";
 }
 #=end GHOSTCODE
 
@@ -1023,7 +1028,7 @@ if ($pval) {
 # false positives (too many spread out)
 # widen all the ranges out by bin size at this point
 if ($pval) {
-  open(my $sh, ">", $output_list);
+  open(my $sh, ">", $output_list) or die "Cannot open $output_list: $!\n";
   print $sh "## Individual SV calls\n";
   print $sh join ("\t", "# Chromosome", "Bin", "Entropy", "Adjusted P", "SV:target region(prob)"), "\n";
   my $merge_i = 0;
