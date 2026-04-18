@@ -28,7 +28,7 @@ use File::Spec;
 #@@@@@@@@@@@
 # Variables 
 #@@@@@@@@@@@
-my $tempdir = File::Temp::tempdir(CLEANUP => 1);
+my $tempdir = File::Temp::tempdir("svre_XXXXXXXX", TMPDIR => 1, CLEANUP => 1);
 my $command_line = join (" ", $0, @ARGV); chomp $command_line;
 my $read;	# the main data file
 my $r1 = "";	# sam/bam file 1
@@ -181,6 +181,9 @@ if ($r1 ne "" && -f $r1 && $r2 ne "" && -f $r2) {
   if ($output eq "") {
     $output = "svre-results";
   }
+  # Security: Sanitize output prefix to prevent injection in R read.table and other tools
+  die "Error: Invalid character in output name\n" if $output =~ /\0/;
+  $output = File::Spec->rel2abs($output);
 } else {
   print <<__USAGE__;
 Usage: $0 -r1 <R1 bam> -r2 <R2 bam> -ori [FR|FF] [ options ]
@@ -1029,7 +1032,6 @@ dev.off()
 __END__
 }
 close $rh;
-#system "$R_command CMD BATCH --slave $r_file $tempdir/Rout";
 if ($pval) {
     system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png, $fdr) == 0 or die "Rscript failed: $!\n";
 } else {
