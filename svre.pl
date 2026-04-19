@@ -72,17 +72,19 @@ my $loopend;
 my $use_translocation = 1;
 
 my $samtools_command = '';
-foreach my $p (split /:/, $ENV{PATH}) {
-    if (-x File::Spec->catfile($p, "samtools")) {
-        $samtools_command = File::Spec->catfile($p, "samtools");
+foreach my $p (File::Spec->path()) {
+    my $full_path = File::Spec->catfile($p, "samtools");
+    if (-x $full_path) {
+        $samtools_command = File::Spec->rel2abs($full_path);
         last;
     }
 }
 
 my $R_command = '';
-foreach my $p (split /:/, $ENV{PATH}) {
-    if (-x File::Spec->catfile($p, "Rscript")) {
-        $R_command = File::Spec->catfile($p, "Rscript");
+foreach my $p (File::Spec->path()) {
+    my $full_path = File::Spec->catfile($p, "Rscript");
+    if (-x $full_path) {
+        $R_command = File::Spec->rel2abs($full_path);
         last;
     }
 }
@@ -161,6 +163,8 @@ GetOptions(
 if ($samtools_command eq '') {
     die "Error: samtools not found in PATH. Please install samtools.\n";
 }
+# Security: Sanitize command paths to prevent manipulation
+die "Error: Invalid character in samtools_command path\n" if $samtools_command =~ /\0/;
 if (! -x $samtools_command) {
     die "Error: samtools command ($samtools_command) is not executable.\n";
 }
@@ -168,6 +172,9 @@ if (! -x $samtools_command) {
 if ($R_command eq '') {
     die "Error: Rscript not found in PATH and not specified via -R_command. Please install R or specify the path to Rscript.\n";
 }
+# Security: Sanitize command paths to prevent manipulation
+$R_command = File::Spec->rel2abs($R_command);
+die "Error: Invalid character in R_command path\n" if $R_command =~ /\0/;
 if (! -x $R_command) {
     die "Error: Rscript command ($R_command) is not executable.\n";
 }
@@ -181,7 +188,9 @@ if ($r1 ne "" && -f $r1 && $r2 ne "" && -f $r2) {
   if ($output eq "") {
     $output = "svre-results";
   }
-  # Security: Sanitize output prefix to prevent injection in R read.table and other tools
+  # Security: Sanitize user-provided paths to prevent manipulation and bypasses
+  die "Error: Invalid character in r1 path\n" if $r1 =~ /\0/;
+  die "Error: Invalid character in r2 path\n" if $r2 =~ /\0/;
   die "Error: Invalid character in output name\n" if $output =~ /\0/;
   $output = File::Spec->rel2abs($output);
 } else {
@@ -997,7 +1006,7 @@ output_png <- args[4]
 ref <- unlist(strsplit(refnames_str, ","))
 refsize <- as.numeric(unlist(strsplit(refsizes_str, ",")))
 
-x <- read.table(output_ic)
+x <- read.table(output_ic, sep="\t", comment.char="", header=T)
 np <- length(ref) * 2
 s <- round(log10(refsize))
 s[1] <- s[1] + 1.5
