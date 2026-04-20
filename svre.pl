@@ -929,7 +929,7 @@ foreach $ref (@reforder) {
   }
   print STDERR "done\n" if !$quiet;
 }
-close $ih;
+close($ih) or die "Error closing $output_ic: $!\n";
 
 #@@@@@@@@@@@@@@@@@@
 # Graphical output
@@ -1040,11 +1040,11 @@ mtext("RIC score", side=2, line=0, cex=1.5, outer=TRUE)
 dev.off()
 __END__
 }
-close $rh;
+close($rh) or die "Error closing R script temp file: $!\n";
 if ($pval) {
-    system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png, $fdr) == 0 or die "Rscript failed: $!\n";
+    system($R_command, "--vanilla", $r_file, $refnames, $refsizes, $output_ic, $output_png, $fdr) == 0 or die "Rscript failed: $!\n";
 } else {
-    system($R_command, $r_file, $refnames, $refsizes, $output_ic, $output_png) == 0 or die "Rscript failed: $!\n";
+    system($R_command, "--vanilla", $r_file, $refnames, $refsizes, $output_ic, $output_png) == 0 or die "Rscript failed: $!\n";
 }
 #=end GHOSTCODE
 
@@ -1316,11 +1316,11 @@ if ($pval) {
   foreach $k (sort {$merge_sv->{$a}->{sort} <=> $merge_sv->{$b}->{sort}} keys %{$merge_sv}) {
     print $sh join ("\t", "$merge_sv->{$k}->{bp1}->{ref}:$merge_sv->{$k}->{bp1}->{coord}", "$merge_sv->{$k}->{bp2}->{ref}:$merge_sv->{$k}->{bp2}->{coord}", $merge_sv->{$k}->{type}, sv::geom_mean(@{$merge_sv->{$k}->{confidence}})), "\n";
   }
-  close $sh;
+  close($sh) or die "Error closing $output_list: $!\n";
 }
 $now = time - $now;
 printf $dh ("\n### Total running time: %02d:%02d:%02d\n", int($now/3600), int(($now % 3600)/60), int($now % 60));
-close $dh;
+close($dh) or die "Error closing $output_detail: $!\n";
 exit;
 
 sub keysort {
