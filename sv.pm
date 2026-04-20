@@ -345,6 +345,8 @@ sub null_distribution_from_file {
     $null->{$dist} = $null->{$dist} / $total;
   }
 
+  close($nh) or die "Error closing $file: $!\n";
+
   return $null;
 }
 
