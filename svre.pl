@@ -73,6 +73,8 @@ my $use_translocation = 1;
 
 my $samtools_command = '';
 foreach my $p (File::Spec->path()) {
+    # Security: skip current directory in PATH to prevent binary planting
+    next if $p eq '' or $p eq '.';
     my $full_path = File::Spec->catfile($p, "samtools");
     if (-x $full_path) {
         $samtools_command = File::Spec->rel2abs($full_path);
@@ -82,6 +84,8 @@ foreach my $p (File::Spec->path()) {
 
 my $R_command = '';
 foreach my $p (File::Spec->path()) {
+    # Security: skip current directory in PATH to prevent binary planting
+    next if $p eq '' or $p eq '.';
     my $full_path = File::Spec->catfile($p, "Rscript");
     if (-x $full_path) {
         $R_command = File::Spec->rel2abs($full_path);

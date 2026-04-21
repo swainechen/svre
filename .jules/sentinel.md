@@ -13,3 +13,8 @@
 **Prevention:**
 1. Always check the return value of `close` on piped filehandles: `close($fh) or die "Pipe failed: $!"`.
 2. Explicitly validate the existence and executability of external binaries in the `PATH` at startup, and use their absolute paths to ensure the intended tools are being invoked.
+
+## 2025-05-14 - Binary Planting in PATH Discovery
+**Vulnerability:** Binary discovery logic that iterates through the `PATH` was susceptible to binary planting if the current directory (`.`) or an empty string was present in the `PATH`.
+**Learning:** Even when manually searching the `PATH` instead of relying on the shell, one must explicitly ignore untrusted directories like the current working directory to prevent execution of malicious binaries placed there.
+**Prevention:** Explicitly skip empty entries and `.` when iterating through `File::Spec->path()`.
