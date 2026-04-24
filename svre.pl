@@ -28,7 +28,7 @@ use File::Spec;
 #@@@@@@@@@@@
 # Variables 
 #@@@@@@@@@@@
-my $tempdir = File::Temp::tempdir("svre_XXXXXXXX", TMPDIR => 1, CLEANUP => 1);
+my $tempdir = File::Spec->rel2abs(File::Temp::tempdir("svre_XXXXXXXX", TMPDIR => 1, CLEANUP => 1));
 my $command_line = join (" ", $0, @ARGV); chomp $command_line;
 my $read;	# the main data file
 my $r1 = "";	# sam/bam file 1
@@ -163,6 +163,12 @@ GetOptions(
   "mapq=i" => \$mapq_min,
   "quiet" => \$quiet
 );
+
+# Security: Validate user-provided and calculated parameters to prevent division-by-zero
+die "Error: bootstrap must be greater than 0\n" if $bootstrap <= 0;
+die "Error: fdr must be between 0 and 1\n" if $fdr <= 0 or $fdr >= 1;
+die "Error: ywindow must be greater than or equal to 0\n" if $ywin < 0;
+die "Error: cov must be greater than 0\n" if $cov_bin <= 0;
 
 if ($samtools_command eq '') {
     die "Error: samtools not found in PATH. Please install samtools.\n";
@@ -628,6 +634,7 @@ foreach $ref (keys %$pos) {
 undef %$pos;
 
 my $global_cdf = {};
+die "Error: No valid mapped reads found in input files.\n" if $global_total == 0;
 foreach $bin (sort keysort keys %$global_dist) {
   $global_dist->{$bin} = $global_dist->{$bin} / $global_total;
   if ($print_dist) {
@@ -1262,7 +1269,7 @@ if ($pval) {
         if ($merge_sv->{$k}->{type} eq $merge_sv->{$l}->{type}) {
           if ($merge_sv->{$k}->{type} eq "Translocation") {
             if ($merge_sv->{$k}->{bp1}->{ref} eq $merge_sv->{$l}->{bp1}->{ref} && $merge_sv->{$k}->{bp2}->{ref} eq $merge_sv->{$l}->{bp2}->{ref}) {
-              if (sv::overlap($merge_sv->{$k}->{bp1}->{coord}, $merge_sv->{$l}->{bp1}->{coord}, $range_cluster) && sv::overlap($merge_sv->{$k}->{bp2}->{coord}, $merge_sv->{$l}->{bp2}->{coord}), $range_cluster) {
+              if (sv::overlap($merge_sv->{$k}->{bp1}->{coord}, $merge_sv->{$l}->{bp1}->{coord}, $range_cluster) && sv::overlap($merge_sv->{$k}->{bp2}->{coord}, $merge_sv->{$l}->{bp2}->{coord}, $range_cluster)) {
                 $merged = 1;
                 $merge_sv->{$k}->{bp1}->{coord} = sv::range([ $merge_sv->{$k}->{bp1}->{coord}, $merge_sv->{$l}->{bp1}->{coord} ], $range_cluster);
                 $merge_sv->{$k}->{bp2}->{coord} = sv::range([ $merge_sv->{$k}->{bp2}->{coord}, $merge_sv->{$l}->{bp2}->{coord} ], $range_cluster);
