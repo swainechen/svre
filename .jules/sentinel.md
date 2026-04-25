@@ -23,3 +23,9 @@
 **Vulnerability:** The application was susceptible to crashes (DoS) when processing input that resulted in zero-valued divisors (e.g., `bootstrap`, `ywin`, `genome_size`) during data binning or progress reporting.
 **Learning:** In bioinformatics tools, user-provided parameters or genomic dimensions often dictate binning logic. If these values are not strictly validated as non-zero, they can lead to runtime exceptions.
 **Prevention:** Explicitly check if global counters or calculated divisors are non-zero before performing division or modulo operations. Use `List::Util::max(1, ...)` for safe defaults in progress indicators.
+## 2026-04-24 - Division-by-Zero in Numerical Calculations and Progress Reporting
+**Vulnerability:** The application was susceptible to script termination (DoS) due to division-by-zero when processing small or invalid genomic data, or when using low bootstrap values.
+**Learning:** In Perl, division by zero is a fatal error. Genomic tools often perform divisions based on derived values (like genome size or median distance) which can be zero if input data is malformed or filter-heavy.
+**Prevention:**
+1. Always validate numeric command-line arguments and derived values (e.g., `$ywin`, `$genome_size`) before using them as divisors.
+2. In loop-based progress reporting, ensure the modulo divisor is at least 1 using `List::Util::max(1, ...)` to handle small iteration counts safely.

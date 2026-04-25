@@ -597,6 +597,8 @@ if ($ywin == 0) {
   $ywin = int($median_dist + (-$median_dist % 50))/2 if $median_dist > 0;
   $ywin = int(-$median_dist + ($median_dist % 50))/2 if $median_dist < 0;
 }
+# Security: ensure ywindow is non-zero to prevent division-by-zero
+die "Error: ywindow cannot be 0. Please check your input files or provide a ywindow using -ywindow.\n" if $ywin == 0;
 
 # can set global distribution and counts now
 # should collapse into bins instead of distances also
@@ -671,6 +673,8 @@ foreach $key (keys %$refh) {
   }
   $genome_size += $i;
 }
+# Security: ensure genome_size is non-zero to prevent division-by-zero
+die "Error: Total genome size cannot be 0. Please check your input files.\n" if $genome_size == 0;
 
 printf STDERR ("Total genome size (rounded to bin size): %d (%d Y-bins)\n", $genome_size, 2*$genome_size/$ywin) if !$quiet;
 
