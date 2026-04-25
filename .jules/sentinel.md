@@ -18,3 +18,8 @@
 **Vulnerability:** Binary discovery logic that iterates through the `PATH` was susceptible to binary planting if the current directory (`.`) or an empty string was present in the `PATH`.
 **Learning:** Even when manually searching the `PATH` instead of relying on the shell, one must explicitly ignore untrusted directories like the current working directory to prevent execution of malicious binaries placed there.
 **Prevention:** Explicitly skip empty entries and `.` when iterating through `File::Spec->path()`.
+
+## 2025-05-24 - Denial of Service via Division-by-Zero in Binning Logic
+**Vulnerability:** The application was susceptible to crashes (DoS) when processing input that resulted in zero-valued divisors (e.g., `bootstrap`, `ywin`, `genome_size`) during data binning or progress reporting.
+**Learning:** In bioinformatics tools, user-provided parameters or genomic dimensions often dictate binning logic. If these values are not strictly validated as non-zero, they can lead to runtime exceptions.
+**Prevention:** Explicitly check if global counters or calculated divisors are non-zero before performing division or modulo operations. Use `List::Util::max(1, ...)` for safe defaults in progress indicators.

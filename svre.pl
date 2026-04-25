@@ -688,6 +688,7 @@ my $max_cov = 0;
 my $snr = 0;
 my $max_snr = 0;
 if ($optimise_cov) {
+  die "Error: genome_size is 0, cannot optimize coverage bin\n" if $genome_size == 0;
   $cov_bin = 2*$read_length_total/$genome_size;
   $cov_bin = int(($cov_bin/100) + 0.5) * 100;
   if ($cov_bin == 0) {
@@ -819,6 +820,7 @@ my $no_of_bins = 0;
 foreach $ref (keys %$count) {
   $no_of_bins += scalar(keys %{$count->{$ref}});
 }
+die "Error: ywin is 0, cannot calculate no_of_ybins\n" if $ywin == 0;
 my $no_of_ybins = round($genome_size*2 / $ywin); 
 
 my @refsize = sort {$b<=>$a} values %$refh;
