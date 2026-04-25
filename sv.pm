@@ -461,7 +461,7 @@ sub bootstrap {
     $random = 0;
     $i = 1;
 
-    $progress = $times % int($bootstrap/20);
+    $progress = $times % max(1, int($bootstrap/20));
     print STDERR "*" if !$quiet && $progress == 0;
     while ($i <= $cov) {
       push @random, rand();
