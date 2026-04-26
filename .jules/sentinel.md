@@ -29,3 +29,8 @@
 **Prevention:**
 1. Always validate numeric command-line arguments and derived values (e.g., `$ywin`, `$genome_size`) before using them as divisors.
 2. In loop-based progress reporting, ensure the modulo divisor is at least 1 using `List::Util::max(1, ...)` to handle small iteration counts safely.
+
+## 2026-04-26 - Infinite Loops and Division-by-Zero in SNR Calculation
+**Vulnerability:** The `sv::snr` function was susceptible to infinite loops and division-by-zero when processing uniform or insufficient relative entropy data.
+**Learning:** Signal-to-Noise Ratio (SNR) calculations often involve partitioning data based on range. If the range is zero (all values identical) or data points are insufficient, calculations for resolution or weights can lead to zero steps in loops or division-by-zero errors.
+**Prevention:** Explicitly validate that the data set has at least two elements and a non-zero range before proceeding with partitioning-based calculations.
