@@ -392,6 +392,10 @@ sub snr {
   }
   @ric = sort {$a <=> $b} @ric;
 
+  # Security: return 0 if there are not enough elements or no variation to avoid division by zero or infinite loops
+  return 0 if scalar(@ric) < 2;
+  return 0 if $ric[$#ric] == $ric[0];
+
   if ($resolution > ($ric[$#ric] - $ric[0])/1000) {
     $resolution = ($ric[$#ric] - $ric[0])/1000;
   }
