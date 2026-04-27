@@ -34,3 +34,10 @@
 **Vulnerability:** The `sv::snr` function was susceptible to infinite loops and division-by-zero when processing uniform or insufficient relative entropy data.
 **Learning:** Signal-to-Noise Ratio (SNR) calculations often involve partitioning data based on range. If the range is zero (all values identical) or data points are insufficient, calculations for resolution or weights can lead to zero steps in loops or division-by-zero errors.
 **Prevention:** Explicitly validate that the data set has at least two elements and a non-zero range before proceeding with partitioning-based calculations.
+
+## 2026-04-27 - Algorithmic Complexity (DoS) in SNR Calculations
+**Vulnerability:** The `sv::snr` function exhibited $O(N^2)$ memory growth and unbounded CPU usage. It stored array slices in hashes for every iteration of a loop whose step size was fixed, leading to memory exhaustion and CPU hangs on large genomic datasets.
+**Learning:** Partitioning algorithms that iterate through a range must have a bounded number of steps. Storing data subsets (like array slices) in long-lived structures within loops can lead to rapid memory depletion.
+**Prevention:**
+1. Always bound the number of iterations in search or optimization loops by making the step size proportional to the total range.
+2. Use transient data references or direct indexing instead of storing redundant copies of data subsets in hashes or arrays within loops.

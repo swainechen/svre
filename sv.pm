@@ -375,7 +375,6 @@ sub snr {
   my ($ri) = @_;
 
   my $min = 0; my $max = 0;
-  my $lt = {}; my $mt = {};
   my $w1 = 0; my $w2 = 0;
   my $sd1 = 0; my $sd2 = 0;
   my $v = 0; my $vmin = 0;
@@ -396,18 +395,17 @@ sub snr {
   return 0 if scalar(@ric) < 2;
   return 0 if $ric[$#ric] == $ric[0];
 
-  if ($resolution > ($ric[$#ric] - $ric[0])/1000) {
-    $resolution = ($ric[$#ric] - $ric[0])/1000;
+  $resolution = ($ric[$#ric] - $ric[0])/1000;
+  if ($resolution < 0.01) {
+    $resolution = 0.01;
   }
   for ($i = $ric[0]; $i <= $ric[$#ric]; $i += $resolution) {
     ($min, $max) = sv::binary_search(\@ric, $i);
     last if $min == $#ric;
-    push @{$lt->{$i}}, @ric[0..$min];
-    push @{$mt->{$i}}, @ric[$min+1..$#ric];
-    $w1 = scalar(@{$lt->{$i}})/scalar(@ric);
-    $w2 = scalar(@{$mt->{$i}})/scalar(@ric);
-    $sd1 = stdev(\@{$lt->{$i}});
-    $sd2 = stdev(\@{$mt->{$i}});
+    $w1 = ($min + 1)/scalar(@ric);
+    $w2 = ($#ric - $min)/scalar(@ric);
+    $sd1 = stdev([@ric[0..$min]]);
+    $sd2 = stdev([@ric[$min+1..$#ric]]);
     $v = ($w1*$sd1*$sd1) + ($w2*$sd2*$sd2);
     if ($v != 0) {
       if ($t == 0) {
