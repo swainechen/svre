@@ -41,3 +41,8 @@
 **Prevention:**
 1. Always bound the number of iterations in search or optimization loops by making the step size proportional to the total range.
 2. Use transient data references or direct indexing instead of storing redundant copies of data subsets in hashes or arrays within loops.
+
+## 2026-04-28 - Infinite Loop DoS in Binary Search via NaN values
+**Vulnerability:** The `sv::binary_search` function was susceptible to infinite loops when encountering `NaN` values in the input array.
+**Learning:** In Perl, all numeric comparisons (`==`, `<`, `>`) with `NaN` return false. If a binary search loop depends solely on these comparisons to update its bounds, it will never terminate if it lands on a `NaN`.
+**Prevention:** Ensure search loops have a terminal `else` or fallback condition that breaks the loop if no comparison is met, and sanitize numeric input data to exclude `NaN` or non-numeric values before processing.
