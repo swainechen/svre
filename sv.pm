@@ -386,7 +386,8 @@ sub snr {
 
   foreach $w1 (keys %$ri) {	# ref
     foreach $w2 (keys %{$ri->{$w1}}) {	# bin
-      push @ric, $ri->{$w1}->{$w2}->{entropy};
+      my $e = $ri->{$w1}->{$w2}->{entropy};
+      push @ric, $e if isfloat($e);
     }
   }
   @ric = sort {$a <=> $b} @ric;
@@ -528,12 +529,13 @@ sub binary_search {
       $low = $try;
       $high = $try;
       last;
-    }
-    if ($array->[$try] < $value) {
-      $low = $try + 1; 
-    }
-    if ($array->[$try] > $value) {
-      $high = $try - 1; 
+    } elsif ($array->[$try] < $value) {
+      $low = $try + 1;
+    } elsif ($array->[$try] > $value) {
+      $high = $try - 1;
+    } else {
+      # This can happen if values are not comparable (e.g. NaN)
+      last;
     }
   }
 
