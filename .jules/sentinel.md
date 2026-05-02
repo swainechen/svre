@@ -46,3 +46,8 @@
 **Vulnerability:** The `sv::binary_search` function was susceptible to infinite loops when encountering `NaN` values in the input array.
 **Learning:** In Perl, all numeric comparisons (`==`, `<`, `>`) with `NaN` return false. If a binary search loop depends solely on these comparisons to update its bounds, it will never terminate if it lands on a `NaN`.
 **Prevention:** Ensure search loops have a terminal `else` or fallback condition that breaks the loop if no comparison is met, and sanitize numeric input data to exclude `NaN` or non-numeric values before processing.
+
+## 2026-04-29 - Denial of Service in Genomic Range Processing
+**Vulnerability:** The `sv::range` function used a point-expansion algorithm that converted genomic intervals into individual points. For large ranges, this caused massive memory allocation and CPU spikes ($O(\text{TotalRangeSize})$).
+**Learning:** In Perl, lexical variables `$a` and `$b` can shadow the global variables used by the `sort` built-in, leading to broken comparisons in algorithms that rely on sorting. Genomic data often contains extremely large intervals that must be processed as intervals rather than collections of points.
+**Prevention:** Use interval-merging algorithms with $O(N \log N)$ complexity for range operations. Avoid using `$a` and `$b` as lexical argument names in subroutines to prevent interference with the `sort` built-in.

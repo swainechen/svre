@@ -35,104 +35,104 @@ use List::Util qw(min max sum);
 # similar to slchen make_list, by increasing the range for +- 50 positions
 # accept a range interval
 sub range {
-  my ($a, $r) = @_; # $a is a reference to an array, $r is range
+  my ($input_a, $r) = @_; # $input_a is a reference to an array, $r is range
   my $ranger = "..";
   my $ranger_re = $ranger;
   $ranger_re =~ s/\./\\./g;
   my $sep = ",";
   my @return;
-  my $arrays;
+  my $arrays = {};
   my $suffix;
-  my ($i, $j, $k);
+  my ($i, $j);
   my (@f, @g);
-  my ($start, $end);
-  my ($p0, $p1);
-  my ($r0, $r1);
-  my $inc = $r-1;
-  $inc = 1 if $inc <= 0;
 
-  foreach $i (@$a) {
+  foreach $i (@$input_a) {
     @f = split /,/, $i;
     foreach $j (0..$#f) {
+      if ($f[$j] =~ /^(.+?)$ranger_re(.+?)$/) {
+        my ($left, $right) = ($1, $2);
+        my ($p0_val, $r0_val, $p1_val, $r1_val);
+
+        if (isfloat($left)) {
+          $p0_val = $left;
+        } elsif ($left =~ /^(-?\d+)___(\S+)$/) {
+          ($p0_val, $r0_val) = ($1, $2);
+        }
+
+        if (isfloat($right)) {
+          $p1_val = $right;
+        } elsif ($right =~ /^(-?\d+)___(\S+)$/) {
+          ($p1_val, $r1_val) = ($1, $2);
+        }
+
+        if (defined $p0_val && defined $p1_val) {
+            my $final_ref = $r0_val // $r1_val;
+            if (defined $r0_val && defined $r1_val && $r0_val ne $r1_val) {
+                 print STDERR "Internal range format error: $f[$j]\n";
+            } else {
+                my $target_key = defined $final_ref ? $final_ref : "__NUMBERS__";
+                push @{$arrays->{$target_key}}, ($p0_val < $p1_val ? [$p0_val, $p1_val] : [$p1_val, $p0_val]);
+            }
+        } else {
+           print STDERR "Internal range format error: $f[$j]\n";
+        }
+        next;
+      }
       @g = split /$ranger_re/, $f[$j];
       if ($#g == 0) {
         if (isfloat($g[0])) {
-          push @{$arrays->{__NUMBERS__}}, $g[0];
+          push @{$arrays->{__NUMBERS__}}, [$g[0], $g[0]];
         } elsif ($g[0] =~ /^(-?\d+)___(\S+)$/) {
-          push @{$arrays->{$2}}, $1;
+          push @{$arrays->{$2}}, [$1, $1];
         }
       } elsif ($#g == 1) {
-        if (isfloat($g[0])) {	# assume $g[1] is a number to catch any errors
-          if ($g[0] > $g[1]) {
-            $k = $g[0];
-            $g[0] = $g[1];
-            $g[1] = $k;
-          }
-          push @{$arrays->{__NUMBERS__}}, $g[0];
-          $k = 1;
-          while ($g[0] + $k*($inc) < $g[1]) {
-            push @{$arrays->{__NUMBERS__}}, $g[0] + $k*($inc);
-            $k++;
-          }
-          push @{$arrays->{__NUMBERS__}}, $g[1];
-        } else {	# again assume format to catch any errors
-          $g[0] =~ /^(-?\d+)___(\S+)$/;
-          $p0 = $1;
-          $r0 = $2;
-          $g[1] =~ /^(-?\d+)___(\S+)$/;
-          $p1 = $1;
-          $r1 = $2;
-          print STDERR "Internal range format error: $f[$j]\n" if $r0 ne $r1;
-          push @{$arrays->{$r0}}, $p0;
-          if ($p0 > $p1) {
-            $k = $p0;
-            $p0 = $p1;
-            $p1 = $k;
-          }
-          $k = 1;
-          while ($p0 + $k*($inc) < $p1) {
-            push @{$arrays->{$r0}}, $p0 + $k*($inc);
-            $k++;
-          }
-          push @{$arrays->{$r0}}, $p1;
+        my ($l, $ri) = ($g[0], $g[1]);
+        my ($p0_v, $r0_v, $p1_v, $r1_v);
+        if (isfloat($l)) { $p0_v = $l; } elsif ($l =~ /^(-?\d+)___(\S+)$/) { ($p0_v, $r0_v) = ($1, $2); }
+        if (isfloat($ri)) { $p1_v = $ri; } elsif ($ri =~ /^(-?\d+)___(\S+)$/) { ($p1_v, $r1_v) = ($1, $2); }
+        if (defined $p0_v && defined $p1_v) {
+          my $f_ref = $r0_v // $r1_v;
+          my $t_key = defined $f_ref ? $f_ref : "__NUMBERS__";
+          push @{$arrays->{$t_key}}, ($p0_v < $p1_v ? [$p0_v, $p1_v] : [$p1_v, $p0_v]);
         }
       }
     }
   }
 
-  foreach $i (keys %$arrays) {
-    @{$arrays->{$i}} = sortu(@{$arrays->{$i}});
-    undef $start;
-    undef $end;
-    if ($i eq "__NUMBERS__") {
+  foreach my $key (sort keys %$arrays) {
+    # Filter out empty entries if any
+    next unless defined $arrays->{$key} && @{$arrays->{$key}};
+
+    # Sort intervals by start position. Using $a and $b globals.
+    my @intervals = sort { $a->[0] <=> $b->[0] } @{$arrays->{$key}};
+
+    if ($key eq "__NUMBERS__") {
       $suffix = "";
     } else {
-      $suffix = "___".$i;
+      $suffix = "___".$key;
     }
-    foreach $j (@{$arrays->{$i}}) {
-      if (!defined $start) {
-        $start = $j;
-        $end = $j;
-        next;
-      }
-      if ($j <= $end + $r) {
-        $end = $j;
+
+    my $curr = shift @intervals;
+    my $start_pos = $curr->[0];
+    my $end_pos = $curr->[1];
+
+    foreach my $interval (@intervals) {
+      if ($interval->[0] <= $end_pos + $r) {
+        $end_pos = max($end_pos, $interval->[1]);
       } else {
-        if ($end == $start) {
-          push @return, $start.$suffix;
+        if ($end_pos == $start_pos) {
+          push @return, $start_pos.$suffix;
         } else {
-          push @return, (join($ranger, $start, $end).$suffix);
+          push @return, (join($ranger, $start_pos, $end_pos).$suffix);
         }
-        $start = $j;
-        $end = $j;
+        $start_pos = $interval->[0];
+        $end_pos = $interval->[1];
       }
     }
-    if (defined $start && defined $end) {
-      if ($end == $start) {
-        push @return, $start.$suffix;
-      } else {
-        push @return, (join($ranger, $start, $end).$suffix);
-      }
+    if ($end_pos == $start_pos) {
+      push @return, $start_pos.$suffix;
+    } else {
+      push @return, (join($ranger, $start_pos, $end_pos).$suffix);
     }
   }
   return join($sep, @return);
@@ -140,16 +140,16 @@ sub range {
 
 sub absrange {	# same as above but return only absolute values
 		# we will assume these are only numbers here
-  my ($a, $r) = @_;
+  my ($a_ref, $r) = @_;
   my $b = [];
   my $i;
-  my @f;
-  foreach $i (@$a) {
+  foreach $i (@$a_ref) {
     if (isfloat($i)) {
       push @$b, abs($i);
     } else {
-      $i =~ /(-?\d+)\.\.(-?\d+)/;
-      push @$b, abs($1) . ".." . abs($2);
+      if ($i =~ /(-?\d+)\.\.(-?\d+)/) {
+        push @$b, abs($1) . ".." . abs($2);
+      }
     }
   }
   return (range($b, abs($r)));
@@ -1209,12 +1209,13 @@ sub refmod {
 sub refadd {
   # do addition of distances, taking into account negative coordinates and
   # circularity - $ref is total length, has to be positive
-  my ($a, $b, $ref) = @_;
+  my ($a_val, $b_val, $ref) = @_;
   my $return;
-  return $a if $b == 0;
+  return $a_val if $b_val == 0;
   $ref = 10000000 if $ref <= 0;
-  $a = $ref if $a == 0;
-  $return = $a + $b;
+  my $a_temp = $a_val;
+  $a_temp = $ref if $a_temp == 0;
+  $return = $a_temp + $b_val;
   while ($return > $ref) {
     $return -= $ref;
   }
@@ -1232,4 +1233,3 @@ sub refadd {
 # Perl uses 'eval' to process the code. Thus for 'eval' to
 # evaluate to TRUE and not fail, we provide a 1
 1;
-
