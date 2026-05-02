@@ -827,17 +827,16 @@ foreach $ref (keys %$count) {
 die "Error: ywin is 0, cannot calculate no_of_ybins\n" if $ywin == 0;
 my $no_of_ybins = round($genome_size*2 / $ywin); 
 
-my @refsize = sort {$b<=>$a} values %$refh;
-my @reforder = ();
+# Security: Fix O(N^2) complexity in chromosome ordering and correct logic errors.
+# Sort chromosome names by size (descending), using name as tie-breaker for stability.
+my @reforder = sort { $refh->{$b} <=> $refh->{$a} || $a cmp $b } keys %$refh;
+my @refsize = map { $refh->{$_} } @reforder;
+
+# Only process chromosomes that actually have data, in the order defined by @reforder.
+my @refnames = grep { exists $count->{$_} } @reforder;
+
 my $refnames = "";
 my $refsizes = "";
-foreach my $i (@refsize) {
-  push @reforder, grep { $refh->{$_} == $i } keys %$refh; 
-}
-my @refnames = keys %$count;
-foreach my $name (@reforder) {
-  push @refnames, grep { $count->{$_} eq $name } keys %$count; 
-}
 
 #@@@@@@@@@@@@@@@@@@@@@@
 # P-value calculations
@@ -864,7 +863,7 @@ my $significant = {};
 
 # adjust the p-values by Benjamini-Yekutieli
 if ($pval) {
-  foreach $ref (@reforder) {
+  foreach $ref (@refnames) {
     foreach $bin (keys %{$ri->{$ref}}) {
       push @ent, $ri->{$ref}->{$bin}->{entropy};
     }
@@ -902,7 +901,7 @@ if ($pval) {
 }
 
 print STDERR "Generating output:\n";
-foreach $ref (@reforder) {
+foreach $ref (@refnames) {
   print STDERR "  $ref ... " if !$quiet;
   foreach $bin (sort {$a <=> $b} keys %{$ri->{$ref}}) {
     print $ih join ("\t",
