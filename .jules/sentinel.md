@@ -51,3 +51,8 @@
 **Vulnerability:** The `sv::range` function used a point-expansion algorithm that converted genomic intervals into individual points. For large ranges, this caused massive memory allocation and CPU spikes ($O(\text{TotalRangeSize})$).
 **Learning:** In Perl, lexical variables `$a` and `$b` can shadow the global variables used by the `sort` built-in, leading to broken comparisons in algorithms that rely on sorting. Genomic data often contains extremely large intervals that must be processed as intervals rather than collections of points.
 **Prevention:** Use interval-merging algorithms with $O(N \log N)$ complexity for range operations. Avoid using `$a` and `$b` as lexical argument names in subroutines to prevent interference with the `sort` built-in.
+
+## 2026-05-15 - Algorithmic Complexity DoS in Chromosome Ordering
+**Vulnerability:** The chromosome ordering logic in `svre.pl` used nested loops ($O(N^2)$) to group chromosomes by size. When processing reference genomes with thousands of chromosomes of identical size (e.g., fragmented assemblies), this led to extreme CPU usage and memory exhaustion due to the list size exploding.
+**Learning:** Naive grouping and sorting algorithms using nested `grep` calls can easily exhibit quadratic or worse complexity. Additionally, incorrect logic for filtering chromosomes (comparing a hash reference to a string) caused valid data to be dropped or misaligned.
+**Prevention:** Always use efficient $O(N \log N)$ sorting functions (like Perl's `sort`) with appropriate tie-breakers for stability. Ensure filtering logic correctly uses `exists` or value checks instead of comparing references to strings.
