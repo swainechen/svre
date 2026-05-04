@@ -56,3 +56,8 @@
 **Vulnerability:** The chromosome ordering logic in `svre.pl` used nested loops ($O(N^2)$) to group chromosomes by size. When processing reference genomes with thousands of chromosomes of identical size (e.g., fragmented assemblies), this led to extreme CPU usage and memory exhaustion due to the list size exploding.
 **Learning:** Naive grouping and sorting algorithms using nested `grep` calls can easily exhibit quadratic or worse complexity. Additionally, incorrect logic for filtering chromosomes (comparing a hash reference to a string) caused valid data to be dropped or misaligned.
 **Prevention:** Always use efficient $O(N \log N)$ sorting functions (like Perl's `sort`) with appropriate tie-breakers for stability. Ensure filtering logic correctly uses `exists` or value checks instead of comparing references to strings.
+
+## 2026-05-16 - Algorithmic Complexity DoS in Relative Information Content (RIC) Calculation
+**Vulnerability:** The `sv::ric` function iterated through every base pair of the genome ($O(G)$) to bin read counts and calculate relative entropy. For large genomes (e.g., human), this caused significant CPU hangs even if the sequencing data was sparse.
+**Learning:** Naive iteration over a full genomic range is dangerous when data is stored in sparse structures (like hashes). The loop was originally designed to process every position, but it only performed work when data existed at that position in a hash.
+**Prevention:** Instead of iterating over the entire genome length, iterate over the sorted, valid coordinate keys of the data hash. This reduces complexity from $O(G)$ to $O(N \log N)$ where $N$ is the number of reads or mapped positions.

@@ -990,54 +990,46 @@ sub ric {
     @pp = ();
     @pn = ();
     
-    foreach $i (1..$refh->{$ref}) {
-      $pos_count_p++;
-      $pos_count_n++;
-      if (defined $precount->{$ref}->{$i}) {
-        if ($rcount_p >= $cov_bin) {
-          $rcount_p = 0;
-        }
-        if ($rcount_p == 0) {
-          $p1 = $i;
-          $count->{$ref}->{$p1}->{pos} = 0;
-          $pos_count_p = 0;
-        }
-        if (defined $precount->{$ref}->{$i}) {
-          if (defined $precount->{$ref}->{$i}->{pair} && ref($precount->{$ref}->{$i}->{pair}) eq "ARRAY"){
-            push @{$count->{$ref}->{$p1}->{pair}}, @{$precount->{$ref}->{$i}->{pair}};
-          }
-          foreach $j (keys %{$precount->{$ref}->{$i}}){
-            next if $j eq "pair";
-            $count->{$ref}->{$p1}->{$j} += $precount->{$ref}->{$i}->{$j};
-            $rcount_p += $precount->{$ref}->{$i}->{$j};
-            $count->{$ref}->{$p1}->{rcount} += $precount->{$ref}->{$i}->{$j};
-          }
-        }
-        $count->{$ref}->{$p1}->{pos} = $pos_count_p;
+    my @pos_coords = sort { $a <=> $b } grep { $_ > 0 } keys %{$precount->{$ref}};
+    foreach my $i (@pos_coords) {
+      if ($rcount_p >= $cov_bin) {
+        $rcount_p = 0;
       }
+      if ($rcount_p == 0) {
+        $p1 = $i;
+        $count->{$ref}->{$p1}->{pos} = 0;
+      }
+      if (defined $precount->{$ref}->{$i}->{pair} && ref($precount->{$ref}->{$i}->{pair}) eq "ARRAY") {
+        push @{$count->{$ref}->{$p1}->{pair}}, @{$precount->{$ref}->{$i}->{pair}};
+      }
+      foreach $j (keys %{$precount->{$ref}->{$i}}) {
+        next if $j eq "pair";
+        $count->{$ref}->{$p1}->{$j} += $precount->{$ref}->{$i}->{$j};
+        $rcount_p += $precount->{$ref}->{$i}->{$j};
+        $count->{$ref}->{$p1}->{rcount} += $precount->{$ref}->{$i}->{$j};
+      }
+      $count->{$ref}->{$p1}->{pos} = $i - $p1;
+    }
 
-      if (defined $precount->{$ref}->{-1*$i}) {
-        if ($rcount_n >= $cov_bin) {
-          $rcount_n = 0;
-        }
-        if ($rcount_n == 0) {
-          $p2 = -1 * $i;
-          $count->{$ref}->{$p2}->{pos} = 0;
-          $pos_count_n = 0;
-        }
-        if (defined $precount->{$ref}->{-1*$i}) {
-          if (defined $precount->{$ref}->{-1*$i}->{pair} && ref($precount->{$ref}->{-1*$i}->{pair}) eq "ARRAY") {
-            push @{$count->{$ref}->{$p2}->{pair}}, @{$precount->{$ref}->{-1*$i}->{pair}};
-          }
-          foreach $j (keys %{$precount->{$ref}->{-1*$i}}){
-            next if $j eq "pair";
-            $count->{$ref}->{$p2}->{$j} += $precount->{$ref}->{-1*$i}->{$j};
-            $rcount_n += $precount->{$ref}->{-1*$i}->{$j};
-            $count->{$ref}->{$p2}->{rcount} += $precount->{$ref}->{-1*$i}->{$j};
-          }
-        }
-        $count->{$ref}->{$p2}->{pos} = $pos_count_n;
+    my @neg_coords = sort { $b <=> $a } grep { $_ < 0 } keys %{$precount->{$ref}};
+    foreach my $i (@neg_coords) {
+      if ($rcount_n >= $cov_bin) {
+        $rcount_n = 0;
       }
+      if ($rcount_n == 0) {
+        $p2 = $i;
+        $count->{$ref}->{$p2}->{pos} = 0;
+      }
+      if (defined $precount->{$ref}->{$i}->{pair} && ref($precount->{$ref}->{$i}->{pair}) eq "ARRAY") {
+        push @{$count->{$ref}->{$p2}->{pair}}, @{$precount->{$ref}->{$i}->{pair}};
+      }
+      foreach $j (keys %{$precount->{$ref}->{$i}}) {
+        next if $j eq "pair";
+        $count->{$ref}->{$p2}->{$j} += $precount->{$ref}->{$i}->{$j};
+        $rcount_n += $precount->{$ref}->{$i}->{$j};
+        $count->{$ref}->{$p2}->{rcount} += $precount->{$ref}->{$i}->{$j};
+      }
+      $count->{$ref}->{$p2}->{pos} = $p2 - $i;
     }
 
     @sortbin = sort {$a<=>$b} keys %{$count->{$ref}};
