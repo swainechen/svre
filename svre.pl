@@ -164,11 +164,11 @@ GetOptions(
   "quiet" => \$quiet
 );
 
-# Security: Validate user-provided and calculated parameters to prevent division-by-zero
-die "Error: bootstrap must be greater than 0\n" if $bootstrap <= 0;
+# Security: Validate user-provided and calculated parameters to prevent resource exhaustion and division-by-zero
+die "Error: bootstrap must be between 1 and 100,000,000\n" if $bootstrap <= 0 or $bootstrap > 100000000;
 die "Error: fdr must be between 0 and 1\n" if $fdr <= 0 or $fdr >= 1;
 die "Error: ywindow must be greater than or equal to 0\n" if $ywin < 0;
-die "Error: cov must be greater than 0\n" if $cov_bin <= 0;
+die "Error: cov must be between 1 and 1,000,000\n" if $cov_bin <= 0 or $cov_bin > 1000000;
 
 if ($samtools_command eq '') {
     die "Error: samtools not found in PATH. Please install samtools.\n";
@@ -968,7 +968,7 @@ qvalue <- as.numeric(args[5])
 ref <- unlist(strsplit(refnames_str, ","))
 refsize <- as.numeric(unlist(strsplit(refsizes_str, ",")))
 
-x <- read.table(output_ic, sep="\t", comment.char="", header=T)
+x <- read.table(output_ic, sep="\t", comment.char="", header=T, quote="")
 np <- length(ref) * 2
 s <- round(log10(refsize))
 s[1] <- s[1] + 1.5
@@ -1022,7 +1022,7 @@ output_png <- args[4]
 ref <- unlist(strsplit(refnames_str, ","))
 refsize <- as.numeric(unlist(strsplit(refsizes_str, ",")))
 
-x <- read.table(output_ic, sep="\t", comment.char="", header=T)
+x <- read.table(output_ic, sep="\t", comment.char="", header=T, quote="")
 np <- length(ref) * 2
 s <- round(log10(refsize))
 s[1] <- s[1] + 1.5

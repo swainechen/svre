@@ -273,6 +273,9 @@ sub poisson {
   } else {
     my $fac = $y->bfac();
     my $e = exp($success_rate);
+    # Security: If success_rate is very large, exp() might underflow to 0 (for large negative values)
+    # or overflow. If it's 0, the denominator becomes 0, leading to a crash.
+    return 0 if $e == 0;
     $e = Math::BigFloat->new($e);
     my $denominator = $fac->bmul($e);
     my $result = $numerator->bdiv($denominator);
