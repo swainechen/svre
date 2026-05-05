@@ -57,7 +57,7 @@
 **Learning:** Naive grouping and sorting algorithms using nested `grep` calls can easily exhibit quadratic or worse complexity. Additionally, incorrect logic for filtering chromosomes (comparing a hash reference to a string) caused valid data to be dropped or misaligned.
 **Prevention:** Always use efficient $O(N \log N)$ sorting functions (like Perl's `sort`) with appropriate tie-breakers for stability. Ensure filtering logic correctly uses `exists` or value checks instead of comparing references to strings.
 
-## 2026-05-16 - Algorithmic Complexity DoS in Relative Information Content (RIC) Calculation
-**Vulnerability:** The `sv::ric` function iterated through every base pair of the genome ($O(G)$) to bin read counts and calculate relative entropy. For large genomes (e.g., human), this caused significant CPU hangs even if the sequencing data was sparse.
-**Learning:** Naive iteration over a full genomic range is dangerous when data is stored in sparse structures (like hashes). The loop was originally designed to process every position, but it only performed work when data existed at that position in a hash.
-**Prevention:** Instead of iterating over the entire genome length, iterate over the sorted, valid coordinate keys of the data hash. This reduces complexity from $O(G)$ to $O(N \log N)$ where $N$ is the number of reads or mapped positions.
+## 2026-05-18 - Algorithmic Complexity DoS in Relative Entropy Calculation (sv::ric)
+**Vulnerability:** The `sv::ric` function in `sv.pm` performed $O(N)$ iteration over the entire genome length (e.g., 250M iterations for human chr1) to bin genomic data, even when only a few data points were present. This led to extreme CPU usage and execution times (e.g., ~27 seconds for 100MB genome).
+**Learning:** Naive data binning that iterates through every possible coordinate in a reference is extremely inefficient for sparse genomic data. High-performance genomic tools must iterate over observed data points and calculate spans/distances between them.
+**Prevention:** Replace genome-wide loops with iterations over sorted data-containing keys from hashes. Use coordinate deltas between consecutive data points to maintain identical binning and bin-size tracking logic.

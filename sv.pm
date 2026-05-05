@@ -990,14 +990,18 @@ sub ric {
     @pp = ();
     @pn = ();
     
-    my @pos_coords = sort { $a <=> $b } grep { $_ > 0 } keys %{$precount->{$ref}};
-    foreach my $i (@pos_coords) {
+    my @pos_p = sort { $a <=> $b } grep { $_ > 0 && $_ <= $refh->{$ref} } keys %{$precount->{$ref}};
+    my $curr_p = 0;
+    foreach $i (@pos_p) {
+      $pos_count_p += ($i - $curr_p);
+      $curr_p = $i;
       if ($rcount_p >= $cov_bin) {
         $rcount_p = 0;
       }
       if ($rcount_p == 0) {
         $p1 = $i;
         $count->{$ref}->{$p1}->{pos} = 0;
+        $pos_count_p = 0;
       }
       if (defined $precount->{$ref}->{$i}->{pair} && ref($precount->{$ref}->{$i}->{pair}) eq "ARRAY") {
         push @{$count->{$ref}->{$p1}->{pair}}, @{$precount->{$ref}->{$i}->{pair}};
@@ -1008,17 +1012,21 @@ sub ric {
         $rcount_p += $precount->{$ref}->{$i}->{$j};
         $count->{$ref}->{$p1}->{rcount} += $precount->{$ref}->{$i}->{$j};
       }
-      $count->{$ref}->{$p1}->{pos} = $i - $p1;
+      $count->{$ref}->{$p1}->{pos} = $pos_count_p;
     }
 
-    my @neg_coords = sort { $b <=> $a } grep { $_ < 0 } keys %{$precount->{$ref}};
-    foreach my $i (@neg_coords) {
+    my @pos_n = sort { $b <=> $a } grep { $_ < 0 && $_ >= -$refh->{$ref} } keys %{$precount->{$ref}};
+    my $curr_n = 0;
+    foreach $i (@pos_n) {
+      $pos_count_n += (abs($i) - $curr_n);
+      $curr_n = abs($i);
       if ($rcount_n >= $cov_bin) {
         $rcount_n = 0;
       }
       if ($rcount_n == 0) {
         $p2 = $i;
         $count->{$ref}->{$p2}->{pos} = 0;
+        $pos_count_n = 0;
       }
       if (defined $precount->{$ref}->{$i}->{pair} && ref($precount->{$ref}->{$i}->{pair}) eq "ARRAY") {
         push @{$count->{$ref}->{$p2}->{pair}}, @{$precount->{$ref}->{$i}->{pair}};
@@ -1029,7 +1037,7 @@ sub ric {
         $rcount_n += $precount->{$ref}->{$i}->{$j};
         $count->{$ref}->{$p2}->{rcount} += $precount->{$ref}->{$i}->{$j};
       }
-      $count->{$ref}->{$p2}->{pos} = $p2 - $i;
+      $count->{$ref}->{$p2}->{pos} = $pos_count_n;
     }
 
     @sortbin = sort {$a<=>$b} keys %{$count->{$ref}};
