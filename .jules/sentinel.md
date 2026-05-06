@@ -61,3 +61,8 @@
 **Vulnerability:** The `sv::ric` function in `sv.pm` performed $O(N)$ iteration over the entire genome length (e.g., 250M iterations for human chr1) to bin genomic data, even when only a few data points were present. This led to extreme CPU usage and execution times (e.g., ~27 seconds for 100MB genome).
 **Learning:** Naive data binning that iterates through every possible coordinate in a reference is extremely inefficient for sparse genomic data. High-performance genomic tools must iterate over observed data points and calculate spans/distances between them.
 **Prevention:** Replace genome-wide loops with iterations over sorted data-containing keys from hashes. Use coordinate deltas between consecutive data points to maintain identical binning and bin-size tracking logic.
+
+## 2026-05-20 - Algorithmic Complexity DoS in Coordinate Normalization
+**Vulnerability:** The `sv::refmod` and `sv::refadd` functions used `while` loops to normalize genomic coordinates against a reference length. For extremely large coordinates or small reference lengths, this resulted in $O(N)$ complexity, leading to CPU exhaustion and script hangs (DoS).
+**Learning:** Naive normalization using iterative subtraction/addition is dangerous when the input range is untrusted or unbounded.
+**Prevention:** Always use $O(1)$ arithmetic (like the modulo operator or direct division) for coordinate normalization instead of loops.

@@ -1197,13 +1197,17 @@ sub refmod {
   if ($coord == 0) {
     return $ref;
   } elsif ($coord > 0) {
-    while ($coord > $ref) {
-      $coord -= $ref;
+    if ($coord > $ref) {
+      my $num_refs = int($coord / $ref);
+      $coord -= $num_refs * $ref;
+      if ($coord <= 0) { $coord += $ref; }
     }
     return $coord;
   } else {
-    while ($coord < -$ref) {
-      $coord += $ref;
+    if ($coord < -$ref) {
+      my $num_refs = int(abs($coord) / $ref);
+      $coord += $num_refs * $ref;
+      if ($coord >= 0) { $coord -= $ref; }
     }
     return $coord;
   }
@@ -1219,11 +1223,14 @@ sub refadd {
   my $a_temp = $a_val;
   $a_temp = $ref if $a_temp == 0;
   $return = $a_temp + $b_val;
-  while ($return > $ref) {
-    $return -= $ref;
+  if ($return > $ref) {
+    my $num_refs = int($return / $ref);
+    $return -= $num_refs * $ref;
+    if ($return <= 0) { $return += $ref; }
   }
-  while ($return <= -$ref) {
-    $return += $ref;
+  if ($return <= -$ref) {
+    my $num_refs = int(abs($return) / $ref);
+    $return += $num_refs * $ref;
   }
   if ($return == 0) {
     return $ref;
