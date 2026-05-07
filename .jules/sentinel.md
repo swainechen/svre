@@ -66,3 +66,8 @@
 **Vulnerability:** The `sv::refmod` and `sv::refadd` functions used `while` loops to normalize genomic coordinates against a reference length. For extremely large coordinates or small reference lengths, this resulted in $O(N)$ complexity, leading to CPU exhaustion and script hangs (DoS).
 **Learning:** Naive normalization using iterative subtraction/addition is dangerous when the input range is untrusted or unbounded.
 **Prevention:** Always use $O(1)$ arithmetic (like the modulo operator or direct division) for coordinate normalization instead of loops.
+
+## 2026-05-22 - Algorithmic Complexity DoS in sv::unwind_distance
+**Vulnerability:** The `sv::unwind_distance` function performed a linear scan ($O(N)$) over an entire genomic bin range (which could be extremely large depending on user-provided `binsize`). This led to CPU exhaustion (DoS) when processing bins with large coordinate spans.
+**Learning:** Iterating through every integer in a genomic range is a common DoS vector in bioinformatics tools. Replacing linear scans with iterations over observed data points (hash keys) protects against large ranges, but can introduce performance regressions if the entire dataset is scanned repeatedly.
+**Prevention:** Use a combination of coordinate-based iteration and caching. Store sorted genomic coordinates for each chromosome and use binary search to locate starting positions within bins. This achieves $O(\log N + \text{DataPointsInBin})$ complexity, providing both security and high performance.

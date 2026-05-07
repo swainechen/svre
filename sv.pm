@@ -1147,7 +1147,29 @@ sub unwind_distance {
   # multiple reads mapping to the same position, and their pairs map on both
   # sides of where we are - but hopefully this doesn't happen too much given
   # the amount of coverage that would be needed
-  foreach $i ($bin .. $bin + $ri->{$ref}->{$bin}->{binsize}) {
+  my $bin_end = $bin + $ri->{$ref}->{$bin}->{binsize};
+  # Security: To prevent algorithmic complexity DoS, iterate only over observed
+  # coordinates in the hash instead of a linear scan of the entire bin range.
+  # Use a cache for sorted keys to maintain O(N log N) total performance
+  # while avoiding O(RangeSize) DoS.
+  if (!defined $precount->{$ref}) {
+    return("error - no data for ref");
+  }
+
+  # Persistent cache for sorted coordinates within the 'sv' package namespace
+  our $UNWIND_COORD_CACHE;
+  if (!defined $UNWIND_COORD_CACHE->{$precount}->{$ref}) {
+    my @coords = sort { $a <=> $b } keys %{$precount->{$ref}};
+    $UNWIND_COORD_CACHE->{$precount}->{$ref} = \@coords;
+  }
+  my $coords = $UNWIND_COORD_CACHE->{$precount}->{$ref};
+
+  my ($start_idx, $unused_end) = binary_search($coords, $bin);
+  for (my $idx = $start_idx; $idx <= $#$coords; $idx++) {
+    $i = $coords->[$idx];
+    last if $i > $bin_end;
+    next if $i < $bin;
+
     next if !defined $precount->{$ref}->{$i}->{$dist};
     next if !defined $precount->{$ref}->{$i}->{pair};	# should never happen
     foreach $j (@{$precount->{$ref}->{$i}->{pair}}) {
