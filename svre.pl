@@ -649,8 +649,9 @@ exit if $print_dist;
 if (!$quiet) {
   print STDERR "Paired-end reads with one / both uniquely mapped: $single / $both\n";
   print STDERR "Median paired-end distance: $median_dist; Y-window bin size: $ywin\n";
-#  print STDERR "Average read length: ", int($read_length_total/(2*$both)),"\n";
+#  print STDERR "Average read length: ", ($both > 0 ? int($read_length_total/(2*$both)) : 0),"\n";
 }
+die "Error: No paired-end reads found where both reads are uniquely mapped. SV detection requires paired-end data.\n" if $both == 0;
 if ($range_cluster == 0) {
   $range_cluster = $median_dist;
 }
@@ -924,12 +925,18 @@ foreach $ref (@refnames) {
         next if $dist eq "pair";
         next if $dist eq "rcount";
         next if $dist eq "pos";
+        my $prob = $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount};
+        my $exp_prob = $global_dist->{$dist};
+        my $info_w = 0;
+        if ($prob > 0 && $exp_prob && $exp_prob > 0) {
+          $info_w = $prob * log($prob/$exp_prob);
+        }
         print $dh join ("\t",
           $dist,
           $count->{$ref}->{$bin}->{$dist},
           $global_dist->{$dist},
-          $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount},
-          $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount}*log($count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount}/$global_dist->{$dist})), "\n";
+          $prob,
+          $info_w), "\n";
       }
       if (defined $count->{$ref}->{$bin}->{pair} && ref($count->{$ref}->{$bin}->{pair}) eq "ARRAY"){
         @pair = @{$count->{$ref}->{$bin}->{pair}};
@@ -1095,7 +1102,12 @@ if ($pval) {
         next if $dist eq "pair";
         next if $dist eq "rcount";
         next if $dist eq "pos";
-        $b_entropy = $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount}*log($count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount}/$global_dist->{$dist});
+        my $prob = $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount};
+        my $exp_prob = $global_dist->{$dist};
+        $b_entropy = 0;
+        if ($prob > 0 && $exp_prob && $exp_prob > 0) {
+          $b_entropy = $prob * log($prob/$exp_prob);
+        }
         next if $b_entropy <= 0;
 
         # translocation

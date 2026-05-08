@@ -71,3 +71,8 @@
 **Vulnerability:** The `sv::unwind_distance` function performed a linear scan ($O(N)$) over an entire genomic bin range (which could be extremely large depending on user-provided `binsize`). This led to CPU exhaustion (DoS) when processing bins with large coordinate spans.
 **Learning:** Iterating through every integer in a genomic range is a common DoS vector in bioinformatics tools. Replacing linear scans with iterations over observed data points (hash keys) protects against large ranges, but can introduce performance regressions if the entire dataset is scanned repeatedly.
 **Prevention:** Use a combination of coordinate-based iteration and caching. Store sorted genomic coordinates for each chromosome and use binary search to locate starting positions within bins. This achieves $O(\log N + \text{DataPointsInBin})$ complexity, providing both security and high performance.
+
+## 2026-05-24 - DoS via log(0) and Division-by-Zero in Entropy Calculations
+**Vulnerability:** The application was susceptible to runtime crashes (DoS) when calculating Relative Information Content (RIC) or bootstrapping if input data resulted in zero-valued probabilities or missing bins in the global distribution.
+**Learning:** In Perl, `log(0)` is a fatal error. Genomic data with extremely low coverage or skewed distributions can lead to zero-valued bins. Skipping these bins in summation is mathematically correct for entropy ($0 \log 0 = 0$) and prevents script termination.
+**Prevention:** Always guard `log()` and division operations with checks for positive arguments and non-zero denominators, especially when derived from data-dependent distributions.
