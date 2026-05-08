@@ -287,6 +287,7 @@ sub poisson {
 # return ln(poisson)
 sub poissonApprox {
   my ($lambda, $k) = @_;
+  return -1000 if $lambda <= 0; # ln(0) is undefined, return a small value
   my $a = $k * log($lambda);
   my $ln_poisson = $a - $lambda - factorialApprox($k);
   return $ln_poisson;
@@ -297,7 +298,7 @@ sub poissonApprox {
 # return ln(n!)
 sub factorialApprox {
   my $x = shift @_;
-  if( $x < 2 ){
+  if( !defined $x || $x < 2 ){
     return 0;
   } else {
     my $a = $x * log($x) - $x;
@@ -504,8 +505,10 @@ sub bootstrap {
 #    foreach $c (sort {$a<=>$b} keys %$bins) {}
     foreach $c (keys %$bins) {
       $freq_bin = $bins->{$c}/$cov;
-      $info_bin = $freq_bin * log($freq_bin/$prob_dist->{$c}); 
-      $info += $info_bin;
+      if ($freq_bin > 0 && $prob_dist->{$c} && $prob_dist->{$c} > 0) {
+        $info_bin = $freq_bin * log($freq_bin/$prob_dist->{$c});
+        $info += $info_bin;
+      }
     }
     $info_freq->{$info} += 1;
     $times++;
@@ -1092,7 +1095,9 @@ sub ric {
         $prob = $count->{$ref}->{$bin}->{$dist}/$rcount;
         $exp_prob = $global_dist->{$dist};
 
-        $info_w = $prob*(log($prob/$exp_prob));
+        if ($prob > 0 && $exp_prob && $exp_prob > 0) {
+          $info_w = $prob*(log($prob/$exp_prob));
+        }
         $info = $info + $info_w;
       }
       $ri->{$ref}->{$bin}->{rcount} = $rcount;
