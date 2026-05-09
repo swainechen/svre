@@ -76,3 +76,8 @@
 **Vulnerability:** The application was susceptible to runtime crashes (DoS) when calculating Relative Information Content (RIC) or bootstrapping if input data resulted in zero-valued probabilities or missing bins in the global distribution.
 **Learning:** In Perl, `log(0)` is a fatal error. Genomic data with extremely low coverage or skewed distributions can lead to zero-valued bins. Skipping these bins in summation is mathematically correct for entropy ($0 \log 0 = 0$) and prevents script termination.
 **Prevention:** Always guard `log()` and division operations with checks for positive arguments and non-zero denominators, especially when derived from data-dependent distributions.
+
+## 2026-05-26 - Denial of Service via Infinite Loops and Division-by-Zero in Utility Functions
+**Vulnerability:** The `sv::null_distribution`, `sv::null_distribution_from_file`, `sv::rms_variance`, and `sv::refmod` functions were susceptible to infinite loops or division-by-zero crashes when provided with non-positive window sizes, reference lengths, or zero-valued bin counts.
+**Learning:** Utility functions in libraries often lack the strict validation present in the main application entry points. This can lead to vulnerabilities if the library is used by other tools or if validation is bypassed.
+**Prevention:** Implement strict guard clauses in all library functions that perform iterative calculations or division to ensure that divisors and loop increments (like `$ywin` or `$ref`) are strictly positive.

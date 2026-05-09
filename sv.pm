@@ -319,6 +319,9 @@ sub null_distribution {
   my $ywin = $_[3];
   my $null = {};
 
+  # Security: prevent infinite loop if ywin is 0 or negative
+  return $null if !$ywin || $ywin <= 0;
+
   for( my $i = $ywin-$genome_size; $i <= $genome_size; $i+=$ywin ){
     $null->{$i} = normal($i, $mean, $sd, $ywin);
   } 
@@ -336,6 +339,9 @@ sub null_distribution_from_file {
   my $total = 0;
   my $j = 0;
 
+  # Security: prevent division-by-zero if ywin is 0 or negative
+  return $null if !$ywin || $ywin <= 0;
+
   open(my $nh, "<", $file) or die "Cannot open file $file: $!\n";
   while(<$nh>){
     chomp;
@@ -346,7 +352,12 @@ sub null_distribution_from_file {
   }
 
   foreach my $dist ( keys %$null ){
-    $null->{$dist} = $null->{$dist} / $total;
+    # Security: prevent division-by-zero if total is 0
+    if ($total > 0) {
+      $null->{$dist} = $null->{$dist} / $total;
+    } else {
+      $null->{$dist} = 0;
+    }
   }
 
   close($nh) or die "Error closing $file: $!\n";
@@ -362,13 +373,17 @@ sub rms_variance {
   my $no_of_ybins = $_[2];
   my $var = 0;
 
-  my $info_mean = $info / round($no_of_ybins);
+  # Security: prevent division-by-zero if rounded no_of_ybins is 0
+  my $rounded_ybins = round($no_of_ybins);
+  return 0 if $rounded_ybins <= 0;
+
+  my $info_mean = $info / $rounded_ybins;
   @info_parts = map{ ($_ - $info_mean) ** 2} @info_parts;
   my $sum = sum(0, @info_parts); 
   # for those bins that don't map
-  $sum += ((0-$info_mean)**2) * (round($no_of_ybins) - scalar(@info_parts));
+  $sum += ((0-$info_mean)**2) * ($rounded_ybins - scalar(@info_parts));
 
-  $var = sqrt($sum/ round($no_of_ybins));
+  $var = sqrt($sum/ $rounded_ybins);
   return $var;
 }
 
@@ -1221,6 +1236,10 @@ sub geom_mean {
 sub refmod {
   # put the coordinate back in a reasonable range for the reference
   my ($coord, $ref) = @_;
+
+  # Security: prevent division-by-zero or infinite loops if ref is 0 or negative
+  return $coord if !$ref || $ref <= 0;
+
   if ($coord == 0) {
     return $ref;
   } elsif ($coord > 0) {
