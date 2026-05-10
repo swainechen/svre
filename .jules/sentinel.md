@@ -77,6 +77,11 @@
 **Learning:** In Perl, `log(0)` is a fatal error. Genomic data with extremely low coverage or skewed distributions can lead to zero-valued bins. Skipping these bins in summation is mathematically correct for entropy ($0 \log 0 = 0$) and prevents script termination.
 **Prevention:** Always guard `log()` and division operations with checks for positive arguments and non-zero denominators, especially when derived from data-dependent distributions.
 
+## 2026-05-30 - Denial of Service via Infinite Loops in Random Event Simulation
+**Vulnerability:** The structural variation simulation functions (`sv::randomsize`, `sv::deletion`, `sv::inversion`, `sv::tandem`, `sv::duplication`) used `while` loops to find random sizes and positions that satisfied specific constraints. If the input parameters (e.g., sequence length vs. required event size) made these constraints impossible to meet, the script would enter an infinite loop, causing a DoS.
+**Learning:** "Trial and error" random generation logic is dangerous when the search space can become empty based on user-provided or data-derived parameters.
+**Prevention:** Refactor random generation to be deterministic in its termination. Calculate the valid range of values first, and then pick from that range in a single step (e.g., `pos = rand(max_pos)`). Ensure that minimum requirements are clamped to the maximum possible value to prevent invalid ranges.
+
 ## 2026-05-26 - Denial of Service via Infinite Loops and Division-by-Zero in Utility Functions
 **Vulnerability:** The `sv::null_distribution`, `sv::null_distribution_from_file`, `sv::rms_variance`, and `sv::refmod` functions were susceptible to infinite loops or division-by-zero crashes when provided with non-positive window sizes, reference lengths, or zero-valued bin counts.
 **Learning:** Utility functions in libraries often lack the strict validation present in the main application entry points. This can lead to vulnerabilities if the library is used by other tools or if validation is bypassed.

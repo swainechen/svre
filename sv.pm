@@ -609,15 +609,19 @@ sub randomposition {
 
 # A subroutine to randomly generate a size
 sub randomsize {
-  my $length = shift @_; 
+  my $length = shift @_;
   my $read_length = shift @_;
-  my $random = 0;
 
-  $length = $length * 0.01;
-  while ($random < $read_length * 2) {
-    $random = int(rand($length));
-  } 
-  return $random;
+  my $max = $length * 0.01;
+  my $min = $read_length * 2;
+
+  # Security: To prevent infinite loops (DoS), avoid using a while loop to find
+  # a random value above a threshold. Directly calculate the range.
+  if ($min >= $max) {
+      return int($max > 1 ? $max : 1);
+  }
+
+  return int(rand($max - $min)) + int($min);
 }
 
 # A subroutine to randomly select an element from an array
@@ -672,11 +676,14 @@ sub insertion {
 sub deletion {
   my $parent = shift @_;
   my $read_length = shift @_;
-  my $position = randomposition(length($parent));
   my $size = randomsize(length($parent), $read_length);
 
-  while ( $size > length($parent) - $position ){
-    $position = randomposition(length($parent));
+  # Security: To prevent infinite loops (DoS), avoid using a while loop to find
+  # a valid position. Pick size first, then pick from the remaining valid range.
+  my $max_pos = length($parent) - $size;
+  my $position = 0;
+  if ($max_pos > 0) {
+    $position = int(rand($max_pos + 1));
   }
 
   my $deleted = substr($parent, $position, $size);
@@ -693,11 +700,14 @@ sub deletion {
 sub inversion {
   my $parent = shift @_;
   my $read_length = shift @_;
-  my $position = randomposition(length($parent));
   my $size = randomsize(length($parent), $read_length);
 
-  while ( $size > length($parent) - $position ){
-    $position = randomposition(length($parent));
+  # Security: To prevent infinite loops (DoS), avoid using a while loop to find
+  # a valid position. Pick size first, then pick from the remaining valid range.
+  my $max_pos = length($parent) - $size;
+  my $position = 0;
+  if ($max_pos > 0) {
+    $position = int(rand($max_pos + 1));
   }
 
   my $inverted = substr($parent, $position, $size);
@@ -715,11 +725,14 @@ sub inversion {
 sub tandem {
   my $parent = shift @_;
   my $read_length = shift @_;
-  my $position = randomposition(length($parent));
   my $size = randomsize(length($parent), $read_length);
-  
-  while ( $size > length($parent) - $position ){
-    $position = randomposition(length($parent));
+
+  # Security: To prevent infinite loops (DoS), avoid using a while loop to find
+  # a valid position. Pick size first, then pick from the remaining valid range.
+  my $max_pos = length($parent) - $size;
+  my $position = 0;
+  if ($max_pos > 0) {
+    $position = int(rand($max_pos + 1));
   }
 
   print STDERR "Tandem duplication\n";
@@ -740,17 +753,27 @@ sub tandem {
 sub duplication {
   my $parent = shift @_;
   my $read_length = shift @_;
-  my $position = randomposition(length($parent));
   my $size = randomsize(length($parent), $read_length);
 
-  while ( $size > length($parent) - $position ){
-    $position = randomposition(length($parent));
+  # Security: To prevent infinite loops (DoS), avoid using a while loop to find
+  # a valid position. Pick size first, then pick from the remaining valid range.
+  my $max_pos = length($parent) - $size;
+  my $position = 0;
+  if ($max_pos > 0) {
+    $position = int(rand($max_pos + 1));
   }
 
   my $duplicate = substr($parent, $position, $size);
   my $position2 = $position;
-  while( $position2 == $position ){
-    $position2 = randomposition(length($parent));
+
+  # Security: Avoid unbounded while loop. Pick a second position that is
+  # different from the first, if the string length allows for more than 1 pos.
+  my $total_len = length($parent);
+  if ($total_len > 1) {
+    $position2 = int(rand($total_len - 1));
+    if ($position2 >= $position) {
+      $position2++;
+    }
   }
   substr($parent, $position2, 0) = "$duplicate";
 
