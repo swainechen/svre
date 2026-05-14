@@ -263,6 +263,13 @@ sub normal {
 # Usage: poisson(rate, value)
 sub poisson {
   my ($success_rate, $x) = @_;
+  return 0 if $x < 0;
+
+  # Security: For large values, use poissonApprox to avoid expensive BigFloat operations (DoS)
+  if ($success_rate > 100 || $x > 100) {
+      return exp(sv::poissonApprox($success_rate, $x));
+  }
+
   my $y = Math::BigFloat->new(round($x));
   my $z = Math::BigFloat->new($success_rate);
 

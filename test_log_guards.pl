@@ -24,9 +24,24 @@ use constant pi => 3.14159265358979;
 package main;
 use lib '.';
 require sv;
-use Test::More tests => 5;
+use Test::More tests => 8;
 
-# Test sv::ric with zero counts
+# Test sv::poisson with hardened logic
+eval {
+    # Large inputs
+    my $start = time();
+    my $res = sv::poisson(10, 1000000);
+    my $end = time();
+    ok($end - $start < 1, "sv::poisson handles large x quickly");
+    is($res, 0, "sv::poisson(10, 1000000) returns 0");
+
+    # Negative inputs
+    $res = sv::poisson(2, -5);
+    is($res, 0, "sv::poisson handles negative x");
+};
+if ($@) {
+    diag("Error in sv::poisson tests: $@");
+}
 my $refh = { chr1 => 1000 };
 my $precount = { chr1 => { 100 => { 50 => 10, "pair" => [200] } } };
 my $global_dist = { 50 => 0 }; # Potential exp_prob = 0

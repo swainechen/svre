@@ -86,3 +86,8 @@
 **Vulnerability:** The `sv::null_distribution`, `sv::null_distribution_from_file`, `sv::rms_variance`, and `sv::refmod` functions were susceptible to infinite loops or division-by-zero crashes when provided with non-positive window sizes, reference lengths, or zero-valued bin counts.
 **Learning:** Utility functions in libraries often lack the strict validation present in the main application entry points. This can lead to vulnerabilities if the library is used by other tools or if validation is bypassed.
 **Prevention:** Implement strict guard clauses in all library functions that perform iterative calculations or division to ensure that divisors and loop increments (like `$ywin` or `$ref`) are strictly positive.
+
+## 2026-06-01 - Algorithmic Complexity DoS in Poisson Probability Calculation
+**Vulnerability:** The `sv::poisson` function used `Math::BigFloat`'s `bfac()` (factorial) and `bpow()` (power) methods, which exhibit $O(N)$ or worse complexity. For large inputs (e.g., $x=1,000,000$), this caused extreme CPU usage and process hangs, leading to a Denial of Service.
+**Learning:** Even when using arbitrary-precision libraries, certain operations like factorials can be computationally prohibitive. For statistical purposes, approximations (like Ramanujam's or Stirling's) often provide sufficient precision with $O(1)$ complexity.
+**Prevention:** Implement threshold-based logic in statistical functions to switch to efficient approximations for large input values. Always validate and bound inputs to prevent expensive operations from being triggered by untrusted data.
