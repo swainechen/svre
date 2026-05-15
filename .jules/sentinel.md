@@ -96,3 +96,10 @@
 **Vulnerability:** The `sv::createsv` subroutine used `while` loops with `redo` to find non-overlapping genomic positions for multiple structural variations. In cases where the genome was small or saturated with mutations, these loops could become infinite, leading to a Denial of Service (CPU exhaustion).
 **Learning:** "Trial and error" search algorithms for valid positions must have an upper bound on attempts. If a valid configuration cannot be found within a reasonable number of retries, it is safer to terminate with an error than to continue indefinitely.
 **Prevention:** Implement explicit retry counters and limits (e.g., 1000 attempts) for all iterative search loops that depend on random chance or data-driven constraints to satisfy overlap requirements.
+
+## 2026-06-05 - Robust SAM Header Parsing and Command-Line Validation
+**Vulnerability:** The application was susceptible to incorrect genomic data processing if SAM header tags (`SN`, `LN`, `ID`, `VN`, `CL`) were not in a specific order. Additionally, missing validation for command-line arguments and `GetOptions` return values could lead to unexpected behavior or DoS when provided with malformed or out-of-range inputs.
+**Learning:** Manual parsing of tab-separated fields in bioinformatics headers should always be position-independent to handle different software outputs. Relying on library-level type checking (e.g., `Getopt::Long`) is preferred over manual string parsing for numeric inputs, combined with explicit bounds checking.
+**Prevention:**
+1. Hardened SAM header parsing in `svre.pl` to iterate through all fields and extract tags using regex.
+2. Implemented strict range validation and error handling for all critical numeric command-line parameters.
