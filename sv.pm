@@ -814,7 +814,9 @@ sub createsv{
   $position->{$pos} = $pos + $size;
   $position->{$pos2} = $pos2 + $size;
 
+  my $attempts = 0;
   CHECK: while( $check == 0 ){
+    die "Error: failed to find non-overlapping position for Deletion after 1000 attempts\n" if ++$attempts > 1000;
     ($seq, $pos, $size, $mutant) = deletion($parent, $read_length);
     foreach $p (keys %$position){
       if( $pos >= $p && $pos <= $position->{$p} ){
@@ -829,7 +831,9 @@ sub createsv{
   $position->{$pos} = $pos + $size;
 
   $check = 0;
+  $attempts = 0;
   CHECKa: while( $check == 0 ){
+    die "Error: failed to find non-overlapping position for Inversion after 1000 attempts\n" if ++$attempts > 1000;
     ($seq, $pos, $size, $mutant) = inversion($parent, $read_length);
     foreach $p (keys %$position){
       if( $pos >= $p && $pos <= $position->{$p} ){
@@ -844,7 +848,9 @@ sub createsv{
   $position->{$pos} = $pos + $size;
 
   $check = 0;
+  $attempts = 0;
   CHECKb: while( $check == 0 ){
+    die "Error: failed to find non-overlapping position for Tandem after 1000 attempts\n" if ++$attempts > 1000;
     ($seq, $pos, $pos2, $size, $mutant) = tandem($parent, $read_length);
     foreach $p (keys %$position){
       if( $pos >= $p && $pos <= $position->{$p} ){
@@ -863,7 +869,9 @@ sub createsv{
   $position->{$pos} = $pos + $size;
 
   $check = 0;
+  $attempts = 0;
   CHECKc: while( $check == 0 ){
+    die "Error: failed to find non-overlapping position for Insertion after 1000 attempts\n" if ++$attempts > 1000;
     ($seq, $pos, $size, $mutant) = insertion($parent, $read_length);
     foreach $p (keys %$position){
       if( $pos >= $p && $pos <= $position->{$p} ){

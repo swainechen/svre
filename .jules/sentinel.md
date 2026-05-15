@@ -91,3 +91,8 @@
 **Vulnerability:** The `sv::poisson` function used `Math::BigFloat`'s `bfac()` (factorial) and `bpow()` (power) methods, which exhibit $O(N)$ or worse complexity. For large inputs (e.g., $x=1,000,000$), this caused extreme CPU usage and process hangs, leading to a Denial of Service.
 **Learning:** Even when using arbitrary-precision libraries, certain operations like factorials can be computationally prohibitive. For statistical purposes, approximations (like Ramanujam's or Stirling's) often provide sufficient precision with $O(1)$ complexity.
 **Prevention:** Implement threshold-based logic in statistical functions to switch to efficient approximations for large input values. Always validate and bound inputs to prevent expensive operations from being triggered by untrusted data.
+
+## 2026-06-03 - Denial of Service via Infinite Loops in Structural Variation Selection
+**Vulnerability:** The `sv::createsv` subroutine used `while` loops with `redo` to find non-overlapping genomic positions for multiple structural variations. In cases where the genome was small or saturated with mutations, these loops could become infinite, leading to a Denial of Service (CPU exhaustion).
+**Learning:** "Trial and error" search algorithms for valid positions must have an upper bound on attempts. If a valid configuration cannot be found within a reasonable number of retries, it is safer to terminate with an error than to continue indefinitely.
+**Prevention:** Implement explicit retry counters and limits (e.g., 1000 attempts) for all iterative search loops that depend on random chance or data-driven constraints to satisfy overlap requirements.
