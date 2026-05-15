@@ -162,13 +162,14 @@ GetOptions(
   "R_command=s" => \$R_command,
   "mapq=i" => \$mapq_min,
   "quiet" => \$quiet
-);
+) or die "Error parsing command line options\n";
 
 # Security: Validate user-provided and calculated parameters to prevent resource exhaustion and division-by-zero
 die "Error: bootstrap must be between 1 and 100,000,000\n" if $bootstrap <= 0 or $bootstrap > 100000000;
 die "Error: fdr must be between 0 and 1\n" if $fdr <= 0 or $fdr >= 1;
 die "Error: ywindow must be greater than or equal to 0\n" if $ywin < 0;
 die "Error: cov must be between 1 and 1,000,000\n" if $cov_bin <= 0 or $cov_bin > 1000000;
+die "Error: mapq must be non-negative\n" if $mapq_min < 0;
 
 if ($samtools_command eq '') {
     die "Error: samtools not found in PATH. Please install samtools.\n";
@@ -274,43 +275,46 @@ if ($r2 =~ /\.sam$/i) {
 }
 
 foreach $i (@samheader1) {
-  if ($i =~ /^\@SQ/) {
+  chomp $i;
+  @f = split /\t/, $i;
+  if ($f[0] eq '@SQ') {
     $ref = "";
     $j = 0;
-    @f = split /\t/, $i;
-    if ($f[1] =~ /SN:(\S+)/) {
-      $ref = $1;
-    }
-    if ($f[2] =~ /LN:(\d+)/) {
-      $j = $1;	# i.e. length
+    foreach my $field (@f) {
+      if ($field =~ /^SN:(\S+)/) {
+        $ref = $1;
+      } elsif ($field =~ /^LN:(\d+)/) {
+        $j = $1;
+      }
     }
     if ($ref ne "" && $j) {
       $refh->{$ref} = $j;
     }
   }
-  if ($i =~ /^\@PG/) {
-    @f = split /\t/, $i;
-    if ($f[1] =~ /ID:(.*?)/) {
-      $mapper = $1;
-    }
-    if ($i =~ /VN:(.*?)\s+/) {
-      $mapper_version = $1;
-    }
-    if ($i =~ /CL:(.*?)/) {
-      $mapper_command_line = $1;
+  if ($f[0] eq '@PG') {
+    foreach my $field (@f) {
+      if ($field =~ /^ID:(.*)/) {
+        $mapper = $1;
+      } elsif ($field =~ /^VN:(.*)/) {
+        $mapper_version = $1;
+      } elsif ($field =~ /^CL:(.*)/) {
+        $mapper_command_line = $1;
+      }
     }
   }
 }
 foreach $i (@samheader2) {
-  if ($i =~ /^\@SQ/) {
+  chomp $i;
+  @f = split /\t/, $i;
+  if ($f[0] eq '@SQ') {
     $ref = "";
     $j = 0;
-    @f = split /\t/, $i;
-    if ($f[1] =~ /SN:(\S+)/) {
-      $ref = $1;
-    }
-    if ($f[2] =~ /LN:(\d+)/) {
-      $j = $1;	# i.e. length
+    foreach my $field (@f) {
+      if ($field =~ /^SN:(\S+)/) {
+        $ref = $1;
+      } elsif ($field =~ /^LN:(\d+)/) {
+        $j = $1;
+      }
     }
     if ($ref ne "" && $j) {
      die "SAM headers don't match on line $i\n" if !defined $refh->{$ref} || $refh->{$ref} != $j;
