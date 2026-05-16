@@ -103,3 +103,10 @@
 **Prevention:**
 1. Hardened SAM header parsing in `svre.pl` to iterate through all fields and extract tags using regex.
 2. Implemented strict range validation and error handling for all critical numeric command-line parameters.
+
+## 2026-06-08 - Division-by-Zero in RIC Proportions and Input Validation in Poisson
+**Vulnerability:** The application was susceptible to Denial of Service (DoS) via script termination due to division-by-zero when calculating proportions of relative information content (RIC) for structural variations if the total entropy sum was zero. Additionally, the `sv::poisson` function lacked input validation, potentially leading to runtime errors with malformed data.
+**Learning:** Even after hardening main binning loops, downstream reporting and typing logic can still be vulnerable to zero-valued aggregates derived from edge-case data. Library functions also require internal validation to handle untrusted or malformed inputs securely.
+**Prevention:**
+1. Always guard division operations in reporting logic with checks for non-zero denominators, especially when the divisor is an aggregate sum of data-dependent values like entropy.
+2. Implement strict input validation (`defined` and `isfloat` checks) at the beginning of library subroutines to ensure they fail gracefully when provided with invalid data.

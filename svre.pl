@@ -1204,7 +1204,7 @@ if ($pval) {
       # actually change targets to ranges
       foreach $i (0..$#f) {
         if ($j == 0) {
-          $j = $sv->{$f[$i]}->{entropy}/$pos_e;
+          $j = ($pos_e != 0) ? $sv->{$f[$i]}->{entropy}/$pos_e : 0;
           $key = $sv->{$f[$i]}->{type};
           @r = ($sv->{$f[$i]}->{target});
           next;
@@ -1212,12 +1212,12 @@ if ($pval) {
         if ($sv->{$f[$i]}->{type} eq "Translocation" &&
             $key eq "Translocation" &&
             $sv->{$f[$i]}->{target} eq $sv->{$f[$i-1]}->{target}) {
-          $j += $sv->{$f[$i]}->{entropy}/$pos_e;
+          $j += ($pos_e != 0) ? $sv->{$f[$i]}->{entropy}/$pos_e : 0;
           @r = ($sv->{$f[$i]}->{target});
         } elsif (sv::isfloat($f[$i]) && sv::isfloat($f[$i-1]) &&
                  $f[$i] - $f[$i-1] <= $ywin &&
                  $sv->{$f[$i]}->{type} eq $key) {
-          $j += $sv->{$f[$i]}->{entropy}/$pos_e;
+          $j += ($pos_e != 0) ? $sv->{$f[$i]}->{entropy}/$pos_e : 0;
           push @r, $sv->{$f[$i]}->{target};
         } else {
           if ($j > $fdr) {

@@ -263,6 +263,8 @@ sub normal {
 # Usage: poisson(rate, value)
 sub poisson {
   my ($success_rate, $x) = @_;
+  return 0 if !defined $success_rate || !defined $x;
+  return 0 if !isfloat($success_rate) || !isfloat($x);
   return 0 if $x < 0;
 
   # Security: For large values, use poissonApprox to avoid expensive BigFloat operations (DoS)
