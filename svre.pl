@@ -929,7 +929,7 @@ foreach $ref (@refnames) {
         next if $dist eq "pair";
         next if $dist eq "rcount";
         next if $dist eq "pos";
-        my $prob = $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount};
+        my $prob = ($ri->{$ref}->{$bin}->{rcount} > 0) ? $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount} : 0;
         my $exp_prob = $global_dist->{$dist};
         my $info_w = 0;
         if ($prob > 0 && $exp_prob && $exp_prob > 0) {
@@ -1106,7 +1106,7 @@ if ($pval) {
         next if $dist eq "pair";
         next if $dist eq "rcount";
         next if $dist eq "pos";
-        my $prob = $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount};
+        my $prob = ($ri->{$ref}->{$bin}->{rcount} > 0) ? $count->{$ref}->{$bin}->{$dist}/$ri->{$ref}->{$bin}->{rcount} : 0;
         my $exp_prob = $global_dist->{$dist};
         $b_entropy = 0;
         if ($prob > 0 && $exp_prob && $exp_prob > 0) {

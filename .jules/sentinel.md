@@ -110,3 +110,8 @@
 **Prevention:**
 1. Always guard division operations in reporting logic with checks for non-zero denominators, especially when the divisor is an aggregate sum of data-dependent values like entropy.
 2. Implement strict input validation (`defined` and `isfloat` checks) at the beginning of library subroutines to ensure they fail gracefully when provided with invalid data.
+
+## 2026-06-10 - Denial of Service via Division-by-Zero in rcount processing
+**Vulnerability:** The application crashed (DoS) when calculating probability distributions in genomic bins that contained only translocations, resulting in a standard read count (`rcount`) of zero.
+**Learning:** Genomic bins can have zero standard reads if they only contain translocation data (stored under the "pair" key). Binning logic must not assume `rcount > 0` even if the bin exists in the data structure.
+**Prevention:** Explicitly guard all divisions using `rcount` as a divisor in `sv::ric` and output generation loops.

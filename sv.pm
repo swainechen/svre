@@ -1147,7 +1147,9 @@ sub ric {
         next if $dist eq "pos";
         my $info_w = 0;
         $prob = 0;
-        $prob = $count->{$ref}->{$bin}->{$dist}/$rcount;
+        if ($rcount > 0) {
+          $prob = $count->{$ref}->{$bin}->{$dist}/$rcount;
+        }
         $exp_prob = $global_dist->{$dist};
 
         if ($prob > 0 && $exp_prob && $exp_prob > 0) {
