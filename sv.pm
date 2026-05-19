@@ -927,31 +927,21 @@ sub createsv{
 }
 
 # average and stdev from http://edwards.sdsu.edu/research/index.php/kate/302-calculating-the-average-and-standard-deviation
+# Both functions are hardened against non-numeric data and empty arrays to prevent DoS (crashes).
 sub average {
-  my($data) = @_;
-  if (not @$data) {
-    die("Empty array\n");
-  }
-  my $total = 0;
-  foreach (@$data) {
-    $total += $_;
-  }
-  my $average = $total / @$data;
-  return $average;
+  my ($data) = @_;
+  my @filtered = grep { isfloat($_) } @$data;
+  return 0 unless @filtered;
+  return sum(@filtered) / scalar(@filtered);
 }
 
 sub stdev {
   my ($data) = @_;
-  if (@$data == 1) {
-    return 0;
-  }
-  my $average = &average($data);
-  my $sqtotal = 0;
-  foreach(@$data) {
-    $sqtotal += ($average-$_) ** 2;
-  }
-  my $std = ($sqtotal / (@$data-1)) ** 0.5;
-  return $std;
+  my @filtered = grep { isfloat($_) } @$data;
+  my $n = scalar(@filtered);
+  return 0 if $n < 2;
+  my $avg = sum(@filtered) / $n;
+  return (sum(map { ($_ - $avg) ** 2 } @filtered) / ($n - 1)) ** 0.5;
 }
 
 sub array_median {

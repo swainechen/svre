@@ -115,3 +115,8 @@
 **Vulnerability:** The application crashed (DoS) when calculating probability distributions in genomic bins that contained only translocations, resulting in a standard read count (`rcount`) of zero.
 **Learning:** Genomic bins can have zero standard reads if they only contain translocation data (stored under the "pair" key). Binning logic must not assume `rcount > 0` even if the bin exists in the data structure.
 **Prevention:** Explicitly guard all divisions using `rcount` as a divisor in `sv::ric` and output generation loops.
+
+## 2026-06-12 - Denial of Service via Missing Input Validation in Utility Functions
+**Vulnerability:** The `sv::average` and `sv::stdev` subroutines in `sv.pm` were susceptible to script termination (DoS) when provided with empty arrays (via `die`) or non-numeric data (via fatal warnings/errors during arithmetic).
+**Learning:** General-purpose utility functions in shared modules often lack the strict validation found in main entry points. When these utilities are used on data derived from untrusted or sparse genomic sources, they can cause unexpected application failure.
+**Prevention:** Always harden utility functions that perform arithmetic or statistical operations. Filter input data for numeric types using `isfloat` or `looks_like_number` and return safe defaults (e.g., 0) instead of using `die` for empty input sets.
