@@ -165,11 +165,11 @@ GetOptions(
 ) or die "Error parsing command line options\n";
 
 # Security: Validate user-provided and calculated parameters to prevent resource exhaustion and division-by-zero
-die "Error: bootstrap must be between 1 and 100,000,000\n" if $bootstrap <= 0 or $bootstrap > 100000000;
-die "Error: fdr must be between 0 and 1\n" if $fdr <= 0 or $fdr >= 1;
-die "Error: ywindow must be greater than or equal to 0\n" if $ywin < 0;
-die "Error: cov must be between 1 and 1,000,000\n" if $cov_bin <= 0 or $cov_bin > 1000000;
-die "Error: mapq must be non-negative\n" if $mapq_min < 0;
+die "Error: bootstrap must be a valid number between 1 and 100,000,000\n" if !sv::isfloat($bootstrap) or $bootstrap <= 0 or $bootstrap > 100000000;
+die "Error: fdr must be a valid number between 0 and 1\n" if !sv::isfloat($fdr) or $fdr <= 0 or $fdr >= 1;
+die "Error: ywindow must be a valid non-negative number\n" if !sv::isfloat($ywin) or $ywin < 0;
+die "Error: cov must be a valid number between 1 and 1,000,000\n" if !sv::isfloat($cov_bin) or $cov_bin <= 0 or $cov_bin > 1000000;
+die "Error: mapq must be a valid non-negative number\n" if !sv::isfloat($mapq_min) or $mapq_min < 0;
 
 if ($samtools_command eq '') {
     die "Error: samtools not found in PATH. Please install samtools.\n";
