@@ -120,3 +120,8 @@
 **Vulnerability:** The `sv::average` and `sv::stdev` subroutines in `sv.pm` were susceptible to script termination (DoS) when provided with empty arrays (via `die`) or non-numeric data (via fatal warnings/errors during arithmetic).
 **Learning:** General-purpose utility functions in shared modules often lack the strict validation found in main entry points. When these utilities are used on data derived from untrusted or sparse genomic sources, they can cause unexpected application failure.
 **Prevention:** Always harden utility functions that perform arithmetic or statistical operations. Filter input data for numeric types using `isfloat` or `looks_like_number` and return safe defaults (e.g., 0) instead of using `die` for empty input sets.
+
+## 2026-06-14 - Bypass of Numeric Range Checks via NaN/Inf in Command-Line Arguments
+**Vulnerability:** Command-line arguments (`bootstrap`, `fdr`, `ywindow`, `cov`, `mapq`) were vulnerable to `NaN` or `Inf` values bypassing numeric range checks. For example, `NaN <= 0` and `NaN > 100` both evaluate to false in Perl, allowing `NaN` to pass a `die "Error" if $x <= 0 or $x > 100` check.
+**Learning:** In Perl, numeric comparisons with `NaN` always return false. This can lead to security bypasses if the application assumes that failing a range check implies the value is valid.
+**Prevention:** Always validate that a numeric string is a valid number using a helper like `sv::isfloat()` (which uses a strict regex) before performing numeric range comparisons.
