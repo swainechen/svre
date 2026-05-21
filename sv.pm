@@ -139,20 +139,23 @@ sub range {
 }
 
 sub absrange {	# same as above but return only absolute values
-		# we will assume these are only numbers here
-  my ($a_ref, $r) = @_;
-  my $b = [];
+		# preserves chromosome suffixes (e.g. 100___ref)
+  my ($a_ref, $r_val) = @_;
+  my $abs_coords = [];
   my $i;
   foreach $i (@$a_ref) {
     if (isfloat($i)) {
-      push @$b, abs($i);
+      push @$abs_coords, abs($i);
+    } elsif ($i =~ /^(-?\d+)___(\S+)$/) {
+      push @$abs_coords, abs($1) . "___" . $2;
     } else {
-      if ($i =~ /(-?\d+)\.\.(-?\d+)/) {
-        push @$b, abs($1) . ".." . abs($2);
+      if ($i =~ /^(-?\d+)\.\.(-?\d+)(?:___(\S+))?$/) {
+        my $suffix = defined $3 ? "___$3" : "";
+        push @$abs_coords, abs($1) . ".." . abs($2) . $suffix;
       }
     }
   }
-  return (range($b, abs($r)));
+  return (range($abs_coords, abs($r_val)));
 }
 
 sub overlap {
@@ -310,9 +313,9 @@ sub factorialApprox {
   if( !defined $x || $x < 2 ){
     return 0;
   } else {
-    my $a = $x * log($x) - $x;
-    my $b = log($x*(1+4*$x*(1+2*$x)))/6;
-    return $a+$b+log(pi)/2;
+    my $val_a = $x * log($x) - $x;
+    my $val_b = log($x*(1+4*$x*(1+2*$x)))/6;
+    return $val_a+$val_b+log(pi)/2;
   }
 }
 

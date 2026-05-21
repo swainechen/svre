@@ -1119,8 +1119,12 @@ if ($pval) {
           $sv->{$dist}->{entropy} = $b_entropy;
           $sv->{$dist}->{type} = "Translocation";
           $sv->{$dist}->{target} = $dist;	# should be format \d+___ref
-          $sv->{$dist}->{target} =~ s/___\S+$//;
-          $sv->{$dist}->{target} = sv::refadd($sv->{$dist}->{target}, -($ri->{$ref}->{$bin}->{binsize}), $refh->{$ref}) . ".." . sv::refadd($sv->{$dist}->{target}, $ri->{$ref}->{$bin}->{binsize}, $refh->{$ref});
+          my $t_ref = $dist;
+          $t_ref =~ s/^-?\d+___//;
+          my $t_pos = $dist;
+          $t_pos =~ s/___.*$//;
+          my $t_ref_len = defined $refh->{$t_ref} ? $refh->{$t_ref} : 10000000;
+          $sv->{$dist}->{target} = sv::refadd($t_pos, -($ri->{$ref}->{$bin}->{binsize}), $t_ref_len) . ".." . sv::refadd($t_pos, $ri->{$ref}->{$bin}->{binsize}, $t_ref_len) . "___$t_ref";
           next;
         }
 
