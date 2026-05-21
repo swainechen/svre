@@ -491,39 +491,24 @@ sub bootstrap {
 
   while ($times <= $bootstrap) {
     $bins = {};
-    @random = ();
-    $random = 0;
     $i = 1;
 
     $progress = $times % max(1, int($bootstrap/20));
     print STDERR "*" if !$quiet && $progress == 0;
+
     while ($i <= $cov) {
-      push @random, rand();
-      $i++;
-    }
-    @random = sort(@random); 
-    $random = shift @random;
-
-    my ($min, $max) = (0, $#cdf);
-    my ($start, $end) = (0, $#cdf); 
-
-    ($min, $max) = binary_search(\@cdf, $random);
-    $start = $min;
-
-    ($min, $max) = binary_search(\@cdf, $random[$#random]);
-    $end = $max;
-
-    CDF: foreach $c (@cdf[$start..$end]) {
-      while ($random <= $c) {
-        $bins->{$cdf->{$c}} += 1;
-
-        if (scalar(@random) != 0) {
-          $random = shift @random;
-        } else {
-          $random = 2;
-          last CDF;
-        }
+      $random = rand();
+      my ($idx1, $idx2) = binary_search(\@cdf, $random);
+      # binary_search returns index range [low, high] where low >= high typically if found
+      # or [high, low] if not exact.
+      # We want the smallest index i such that cdf[i] >= random.
+      my $target_idx = $idx1 < $idx2 ? $idx1 : $idx2;
+      while ($target_idx <= $#cdf && $cdf[$target_idx] < $random) {
+          $target_idx++;
       }
+      $target_idx = $#cdf if $target_idx > $#cdf;
+      $bins->{$cdf->{$cdf[$target_idx]}}++;
+      $i++;
     }
 
     my $info = 0;
