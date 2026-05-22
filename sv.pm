@@ -1029,7 +1029,7 @@ sub ric {
     @pp = ();
     @pn = ();
     
-    my @pos_p = sort { $a <=> $b } grep { $_ > 0 && $_ <= $refh->{$ref} } keys %{$precount->{$ref}};
+    my @pos_p = sort { $a <=> $b } grep { $_ > 0 && $_ <= $refh->{$ref} } keys %{$precount->{$ref} // {}};
     my $curr_p = 0;
     foreach $i (@pos_p) {
       $pos_count_p += ($i - $curr_p);
@@ -1054,7 +1054,7 @@ sub ric {
       $count->{$ref}->{$p1}->{pos} = $pos_count_p;
     }
 
-    my @pos_n = sort { $b <=> $a } grep { $_ < 0 && $_ >= -$refh->{$ref} } keys %{$precount->{$ref}};
+    my @pos_n = sort { $b <=> $a } grep { $_ < 0 && $_ >= -$refh->{$ref} } keys %{$precount->{$ref} // {}};
     my $curr_n = 0;
     foreach $i (@pos_n) {
       $pos_count_n += (abs($i) - $curr_n);
@@ -1079,7 +1079,7 @@ sub ric {
       $count->{$ref}->{$p2}->{pos} = $pos_count_n;
     }
 
-    @sortbin = sort {$a<=>$b} keys %{$count->{$ref}};
+    @sortbin = sort {$a<=>$b} keys %{$count->{$ref} // {}};
     BIN: foreach my $bin (@sortbin) {
       next if !defined $count->{$ref}->{$bin};	# in case we deleted the last one
       next if !defined $count->{$ref}->{$bin}->{rcount};
