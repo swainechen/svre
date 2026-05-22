@@ -125,3 +125,8 @@
 **Vulnerability:** Command-line arguments (`bootstrap`, `fdr`, `ywindow`, `cov`, `mapq`) were vulnerable to `NaN` or `Inf` values bypassing numeric range checks. For example, `NaN <= 0` and `NaN > 100` both evaluate to false in Perl, allowing `NaN` to pass a `die "Error" if $x <= 0 or $x > 100` check.
 **Learning:** In Perl, numeric comparisons with `NaN` always return false. This can lead to security bypasses if the application assumes that failing a range check implies the value is valid.
 **Prevention:** Always validate that a numeric string is a valid number using a helper like `sv::isfloat()` (which uses a strict regex) before performing numeric range comparisons.
+
+## 2026-06-16 - Algorithmic Complexity DoS in sv::bootstrap
+**Vulnerability:** The `sv::bootstrap` function in `sv.pm` was susceptible to an Algorithmic Complexity DoS. For each bootstrapping iteration, it performed a linear scan of a slice of the Cumulative Distribution Function (CDF) array to map random samples to bins. When processing datasets with a large number of bins (e.g., 1,000,000), this led to $O(N)$ complexity per sample, causing extreme CPU usage and multi-minute execution times.
+**Learning:** Sampling from a large discrete distribution using a linear CDF sweep is a common performance bottleneck and security risk. Sorting samples and sweeping can help, but direct binary search into the CDF is more robust and efficient for independent samples.
+**Prevention:** Replace linear scans or slice-based sweeps in statistical sampling functions with $O(\log N)$ binary search. Ensure that the search logic correctly handles boundary conditions (like `rand()` returning 1.0) to maintain statistical integrity.
