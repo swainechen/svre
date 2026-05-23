@@ -135,3 +135,11 @@
 **Vulnerability:** The `sv::ric` function was susceptible to runtime crashes (DoS) when processing a reference genome where some chromosomes had no mapped reads. Attempting to call `keys` on an undefined hash reference (e.g., `%{$precount->{$ref}}`) caused the script to terminate.
 **Learning:** Genomic data is often sparse, and some chromosomes in a reference might not have any observations in a specific dataset. Code that iterates over chromosomes based on a reference list must gracefully handle missing data for those chromosomes in data-dependent hashes.
 **Prevention:** Use the defined-or operator (`// {}`) or explicit `defined` checks before dereferencing hash or array references that might be missing for specific genomic regions or chromosomes.
+
+## 2026-05-23 - Logic Errors in Utility Functions and Redundant Qualification
+**Vulnerability:** The `sv::sortu` utility function incorrectly included undefined elements in the sorting process, leading to potential warnings and non-deterministic results. The `sv::range` function lacked a definedness check for its range parameter, causing uninitialized value warnings.
+**Learning:** General-purpose utility functions in shared modules often contain edge-case bugs that can manifest as runtime warnings or logic failures when processing sparse genomic data. Redundant qualification of internal functions with package prefixes (e.g., `sv::`) within the same package is non-idiomatic in Perl and should be avoided to maintain code clarity.
+**Prevention:**
+1. Implement strict definedness checks at the beginning of utility functions that accept optional or data-dependent parameters.
+2. Ensure that filtering logic for sorting (e.g., creating `@defined` lists) correctly excludes `undef` values to prevent sorting errors.
+3. Follow idiomatic coding standards for the language; in Perl, avoid redundant package prefixes for internal calls within the same namespace.
