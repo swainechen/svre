@@ -36,6 +36,7 @@ use List::Util qw(min max sum);
 # accept a range interval
 sub range {
   my ($input_a, $r) = @_; # $input_a is a reference to an array, $r is range
+  return "" if !defined $r;
   my $ranger = "..";
   my $ranger_re = $ranger;
   $ranger_re =~ s/\./\\./g;
@@ -965,10 +966,11 @@ sub sortu {
   foreach my $i (0..$#a) {
     if (!defined $a[$i]) {
       push @undefined, $i;
-    }
-    push @defined, $i;
-    if (!isfloat($a[$i])) {
-      $number = 0;
+    } else {
+      push @defined, $i;
+      if (!isfloat($a[$i])) {
+        $number = 0;
+      }
     }
   }
   if ($number) {
