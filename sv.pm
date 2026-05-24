@@ -253,6 +253,11 @@ sub pair_check {
 # Usage: normal(value, mean, sd, interval)
 sub normal {
   my ($x, $mean, $sd, $interval) = @_;
+  return 0 if !defined $x || !defined $mean || !defined $sd || !defined $interval;
+  return 0 if !isfloat($x) || !isfloat($mean) || !isfloat($sd) || !isfloat($interval);
+  # Security: prevent division-by-zero if sd is 0 or negative
+  return 0 if $sd <= 0;
+
   my $a = $x + $interval;
   my $prob_x = 0;
   my $prob_a = 0;
@@ -334,6 +339,8 @@ sub null_distribution {
 
   # Security: prevent infinite loop if ywin is 0 or negative
   return $null if !$ywin || $ywin <= 0;
+  # Security: prevent division-by-zero or logic error in normal if sd is invalid
+  return $null if !defined $sd || !isfloat($sd) || $sd <= 0;
 
   for( my $i = $ywin-$genome_size; $i <= $genome_size; $i+=$ywin ){
     $null->{$i} = normal($i, $mean, $sd, $ywin);
