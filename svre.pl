@@ -829,6 +829,9 @@ my $no_of_bins = 0;
 foreach $ref (keys %$count) {
   $no_of_bins += scalar(keys %{$count->{$ref}});
 }
+# Security: Limit total number of genomic bins to prevent OOM DoS
+die "Error: Too many genomic bins ($no_of_bins). Maximum allowed is 10,000,000. Increase coverage bin (-cov) or check input data.\n" if $no_of_bins > 10000000;
+
 die "Error: ywin is 0, cannot calculate no_of_ybins\n" if $ywin == 0;
 my $no_of_ybins = round($genome_size*2 / $ywin); 
 
@@ -876,12 +879,13 @@ if ($pval) {
   @ent = sort {$b <=> $a} @ent;
   $j = 0;
   $pos1 = 1/$bootstrap;
-  while ($j <= $#ent && $ent[$j] > max(keys %$info_freq)) {
+  my $max_info = max(keys %$info_freq);
+  while ($j <= $#ent && $ent[$j] > $max_info) {
     $pvalue->{$ent[$j]} = 1/$bootstrap;
     push @pv, 1/$bootstrap;
     $j++;
   }
-  $pos1 = $info_freq->{max(keys %$info_freq)};
+  $pos1 = $info_freq->{$max_info};
   foreach $i (sort {$b <=> $a} keys %$info_freq) {
     while ($j <= $#ent && $ent[$j] > $i) {
       $pvalue->{$ent[$j]} = $pos1;
