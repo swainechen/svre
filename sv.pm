@@ -439,13 +439,47 @@ sub snr {
   if ($resolution < 0.01) {
     $resolution = 0.01;
   }
+  # Security: Use prefix sums for O(1) variance calculation to prevent Algorithmic Complexity DoS (CPU/Memory exhaustion)
+  my @sum_x = (0);
+  my @sum_x2 = (0);
+  my $curr_sum = 0;
+  my $curr_sum2 = 0;
+  foreach my $val (@ric) {
+    $curr_sum += $val;
+    $curr_sum2 += $val * $val;
+    push @sum_x, $curr_sum;
+    push @sum_x2, $curr_sum2;
+  }
+  my $total_n = scalar(@ric);
+
   for ($i = $ric[0]; $i <= $ric[$#ric]; $i += $resolution) {
     ($min, $max) = sv::binary_search(\@ric, $i);
     last if $min == $#ric;
-    $w1 = ($min + 1)/scalar(@ric);
-    $w2 = ($#ric - $min)/scalar(@ric);
-    $sd1 = stdev([@ric[0..$min]]);
-    $sd2 = stdev([@ric[$min+1..$#ric]]);
+
+    my $n1 = $min + 1;
+    my $n2 = $total_n - $n1;
+
+    $w1 = $n1 / $total_n;
+    $w2 = $n2 / $total_n;
+
+    $sd1 = 0;
+    if ($n1 >= 2) {
+      my $sx = $sum_x[$n1];
+      my $sx2 = $sum_x2[$n1];
+      # max(0, ...) for numerical stability
+      my $v1 = ($sx2 - ($sx * $sx / $n1)) / ($n1 - 1);
+      $sd1 = max(0, $v1) ** 0.5;
+    }
+
+    $sd2 = 0;
+    if ($n2 >= 2) {
+      my $sx = $sum_x[$total_n] - $sum_x[$n1];
+      my $sx2 = $sum_x2[$total_n] - $sum_x2[$n1];
+      # max(0, ...) for numerical stability
+      my $v2 = ($sx2 - ($sx * $sx / $n2)) / ($n2 - 1);
+      $sd2 = max(0, $v2) ** 0.5;
+    }
+
     $v = ($w1*$sd1*$sd1) + ($w2*$sd2*$sd2);
     if ($v != 0) {
       if ($t == 0) {
@@ -460,9 +494,9 @@ sub snr {
 
   ($min, $max) = sv::binary_search(\@ric, $t); 
   $noise_n = $min+1;
-  $noise = sum(@ric[0..$min]);
-  $signal_n = $#ric - $min;
-  $signal = sum(@ric[$min+1..$#ric]);
+  $noise = $sum_x[$noise_n];
+  $signal_n = $total_n - $noise_n;
+  $signal = $sum_x[$total_n] - $sum_x[$noise_n];
 
   if ($noise * $signal_n) {
     $snr = ($signal * $noise_n)/($noise * $signal_n);
