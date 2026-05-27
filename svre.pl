@@ -827,7 +827,8 @@ $output_png = $output."_graph.png";
 #@@@@@@@@@@@@@@@@@@@@
 my $no_of_bins = 0;
 foreach $ref (keys %$count) {
-  $no_of_bins += scalar(keys %{$count->{$ref}});
+  # Security: Use defined-or to safely handle chromosomes with no data (prevents crash/DoS)
+  $no_of_bins += scalar(keys %{$count->{$ref} // {}});
 }
 # Security: Limit total number of genomic bins to prevent OOM DoS
 die "Error: Too many genomic bins ($no_of_bins). Maximum allowed is 10,000,000. Increase coverage bin (-cov) or check input data.\n" if $no_of_bins > 10000000;
@@ -838,10 +839,12 @@ my $no_of_ybins = round($genome_size*2 / $ywin);
 # Security: Fix O(N^2) complexity in chromosome ordering and correct logic errors.
 # Sort chromosome names by size (descending), using name as tie-breaker for stability.
 my @reforder = sort { $refh->{$b} <=> $refh->{$a} || $a cmp $b } keys %$refh;
-my @refsize = map { $refh->{$_} } @reforder;
 
 # Only process chromosomes that actually have data, in the order defined by @reforder.
+# Security: Use this filtered list for both analysis and graphical output to prevent
+# Resource Exhaustion/DoS when processing many scaffolds.
 my @refnames = grep { exists $count->{$_} } @reforder;
+my @refsize = map { $refh->{$_} } @refnames;
 
 my $refnames = "";
 my $refsizes = "";
@@ -965,7 +968,9 @@ close($ih) or die "Error closing $output_ic: $!\n";
 #@@@@@@@@@@@@@@@@@@
 # Graphical output
 #@@@@@@@@@@@@@@@@@@
-$refnames = join(",", @reforder);
+# Security: Use only chromosomes that have data for graphical output to prevent
+# Resource Exhaustion/DoS when thousands of scaffolds are present.
+$refnames = join(",", @refnames);
 $refsizes = join(",", @refsize);
 
 #=begin GHOSTCODE
