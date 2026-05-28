@@ -1246,13 +1246,17 @@ if ($pval) {
             } else {
               push @out, sprintf("%s:%s(%.2f)", $key, $r[0], $j);
               $merge_sv->{$merge_i}->{bp1}->{ref} = $ref;
-              $merge_sv->{$merge_i}->{bp2}->{ref} = $f[$i];	# this should be \d+___ref
-              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/\d+___//;
+              # Fix: Use the correct reference from the group being reported
+              $merge_sv->{$merge_i}->{bp2}->{ref} = $r[0];
+              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.\d+)?___//;
               $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
               $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
             }
           }
-          $j = 0;
+          # Fix: Correctly initialize variables for the next group using current element
+          $j = ($pos_e != 0) ? $sv->{$f[$i]}->{entropy}/$pos_e : 0;
+          $key = $sv->{$f[$i]}->{type};
+          @r = ($sv->{$f[$i]}->{target});
         }
       }
       if ($j > $fdr) {
@@ -1268,8 +1272,9 @@ if ($pval) {
         } else {		# a translocation
           push @out, sprintf("%s:%s(%.2f)", $key, $r[0], $j);
           $merge_sv->{$merge_i}->{bp1}->{ref} = $ref;
-          $merge_sv->{$merge_i}->{bp2}->{ref} = $f[$#f];	# this should be \d+___ref
-          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/\d+___//;
+          # Fix: Use the correct reference from the group being reported
+          $merge_sv->{$merge_i}->{bp2}->{ref} = $r[0];
+          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.\d+)?___//;
           $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
           $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
         }
