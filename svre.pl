@@ -1246,9 +1246,10 @@ if ($pval) {
             } else {
               push @out, sprintf("%s:%s(%.2f)", $key, $r[0], $j);
               $merge_sv->{$merge_i}->{bp1}->{ref} = $ref;
-              # Fix: Use the correct reference from the group being reported
+              # Fix: Use the correct reference from the group being reported.
+              # Security: Robustly strip metadata prefix to prevent variable contamination.
               $merge_sv->{$merge_i}->{bp2}->{ref} = $r[0];
-              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.\d+)?___//;
+              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.-?\d+)?___//;
               $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
               $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
             }
@@ -1272,9 +1273,10 @@ if ($pval) {
         } else {		# a translocation
           push @out, sprintf("%s:%s(%.2f)", $key, $r[0], $j);
           $merge_sv->{$merge_i}->{bp1}->{ref} = $ref;
-          # Fix: Use the correct reference from the group being reported
+          # Fix: Use the correct reference from the group being reported.
+          # Security: Robustly strip metadata prefix to prevent variable contamination.
           $merge_sv->{$merge_i}->{bp2}->{ref} = $r[0];
-          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.\d+)?___//;
+          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.-?\d+)?___//;
           $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
           $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
         }
