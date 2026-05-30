@@ -126,6 +126,11 @@
 **Learning:** In Perl, numeric comparisons with `NaN` always return false. This can lead to security bypasses if the application assumes that failing a range check implies the value is valid.
 **Prevention:** Always validate that a numeric string is a valid number using a helper like `sv::isfloat()` (which uses a strict regex) before performing numeric range comparisons.
 
+## 2025-06-20 - Metadata Corruption via Negative Coordinate Ranges
+**Vulnerability:** Regex-based metadata extraction failed to handle negative numbers in genomic ranges, leading to coordinate data leaking into reference name variables.
+**Learning:** In bioinformatics, coordinates can be negative (e.g., relative to a feature or on the reverse strand). Sanitization regexes must explicitly account for optional signs in all numeric parts of a range.
+**Prevention:** Use robust regexes like `s/^-?\d+(\.\.-?\d+)?___//` when stripping coordinate prefixes that might contain negative values.
+
 ## 2026-06-16 - Algorithmic Complexity DoS in sv::bootstrap
 **Vulnerability:** The `sv::bootstrap` function in `sv.pm` was susceptible to an Algorithmic Complexity DoS. For each bootstrapping iteration, it performed a linear scan of a slice of the Cumulative Distribution Function (CDF) array to map random samples to bins. When processing datasets with a large number of bins (e.g., 1,000,000), this led to $O(N)$ complexity per sample, causing extreme CPU usage and multi-minute execution times.
 **Learning:** Sampling from a large discrete distribution using a linear CDF sweep is a common performance bottleneck and security risk. Sorting samples and sweeping can help, but direct binary search into the CDF is more robust and efficient for independent samples.
