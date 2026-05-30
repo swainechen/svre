@@ -148,3 +148,8 @@
 1. Implement strict definedness checks at the beginning of utility functions that accept optional or data-dependent parameters.
 2. Ensure that filtering logic for sorting (e.g., creating `@defined` lists) correctly excludes `undef` values to prevent sorting errors.
 3. Follow idiomatic coding standards for the language; in Perl, avoid redundant package prefixes for internal calls within the same namespace.
+
+## 2026-06-21 - Path Traversal via Output Filenames
+**Vulnerability:** User-provided output filename prefixes were susceptible to path traversal via `..` components, allowing arbitrary file writes outside the intended output directory.
+**Learning:** `File::Spec->rel2abs()` resolves relative paths to absolute ones but preserves `..` components. If these absolute paths containing `..` are used in file operations or passed to external tools (like `Rscript`), they can still be exploited for path traversal.
+**Prevention:** Use `File::Spec->canonpath()` to normalize the path and explicitly check for `..` components (e.g., using regex `/\.\.(\/|\\|$)/`) before proceeding with file operations.

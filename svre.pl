@@ -203,6 +203,12 @@ if ($r1 ne "" && -f $r1 && $r2 ne "" && -f $r2) {
   die "Error: Invalid character in r1 path\n" if $r1 =~ /\0/;
   die "Error: Invalid character in r2 path\n" if $r2 =~ /\0/;
   die "Error: Invalid character in output name\n" if $output =~ /\0/;
+
+  # Security: Prevent path traversal in output name
+  if (File::Spec->canonpath($output) =~ /\.\.(\/|\\|$)/) {
+    die "Error: Path traversal attempt detected in output name\n";
+  }
+
   $output = File::Spec->rel2abs($output);
 } else {
   print <<__USAGE__;
