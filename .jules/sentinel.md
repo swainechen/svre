@@ -153,3 +153,11 @@
 **Vulnerability:** User-provided output filename prefixes were susceptible to path traversal via `..` components, allowing arbitrary file writes outside the intended output directory.
 **Learning:** `File::Spec->rel2abs()` resolves relative paths to absolute ones but preserves `..` components. If these absolute paths containing `..` are used in file operations or passed to external tools (like `Rscript`), they can still be exploited for path traversal.
 **Prevention:** Use `File::Spec->canonpath()` to normalize the path and explicitly check for `..` components (e.g., using regex `/\.\.(\/|\\|$)/`) before proceeding with file operations.
+
+## 2025-06-25 - R Command Injection via read.table and DoS via ARG_MAX
+**Vulnerability:** R's `read.table` function can execute arbitrary shell commands if the provided filename starts with a pipe character (`|`). Additionally, passing thousands of chromosome names as command-line arguments to `Rscript` can trigger "Argument list too long" (E2BIG) errors.
+**Learning:** External tools often have language-specific "features" like R's pipe-opening behavior that can lead to command injection even when the main application is otherwise secure. Command-line length limits are a real DoS vector for tools processing large genomic datasets with many scaffolds.
+**Prevention:**
+1. Explicitly block input strings that start with `|` when they will be used as filenames in R.
+2. Use temporary files to pass large metadata collections between processes instead of relying on command-line arguments.
+3. Use robust `read.table` parameters (`quote=""`, `comment.char=""`) to handle untrusted data within files.

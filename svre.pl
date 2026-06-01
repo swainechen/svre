@@ -209,6 +209,11 @@ if ($r1 ne "" && -f $r1 && $r2 ne "" && -f $r2) {
     die "Error: Path traversal attempt detected in output name\n";
   }
 
+  # Security: Mitigate R command injection via read.table pipes
+  if ($output =~ /^\s*\|/) {
+    die "Error: Output prefix cannot start with a pipe character\n";
+  }
+
   $output = File::Spec->rel2abs($output);
 } else {
   print <<__USAGE__;
@@ -976,8 +981,12 @@ close($ih) or die "Error closing $output_ic: $!\n";
 #@@@@@@@@@@@@@@@@@@
 # Security: Use only chromosomes that have data for graphical output to prevent
 # Resource Exhaustion/DoS when thousands of scaffolds are present.
-$refnames = join(",", @refnames);
-$refsizes = join(",", @refsize);
+my $ref_metadata_file = File::Spec->catfile($tempdir, "ref_metadata.txt");
+open(my $mh, ">", $ref_metadata_file) or die "Cannot open $ref_metadata_file: $!\n";
+foreach my $idx (0..$#refnames) {
+  print $mh join("\t", $refnames[$idx], $refsize[$idx]), "\n";
+}
+close($mh) or die "Error closing $ref_metadata_file: $!\n";
 
 #=begin GHOSTCODE
 $r_file = $tempdir."/r";
@@ -985,14 +994,14 @@ open(my $rh, ">", $r_file) or die "Cannot open $r_file: $!\n";
 if ($pval) {
 print $rh <<'__END__';
 args <- commandArgs(trailingOnly = TRUE)
-refnames_str <- args[1]
-refsizes_str <- args[2]
-output_ic <- args[3]
-output_png <- args[4]
-qvalue <- as.numeric(args[5])
+ref_metadata_file <- args[1]
+output_ic <- args[2]
+output_png <- args[3]
+qvalue <- as.numeric(args[4])
 
-ref <- unlist(strsplit(refnames_str, ","))
-refsize <- as.numeric(unlist(strsplit(refsizes_str, ",")))
+metadata <- read.table(ref_metadata_file, sep="\t", header=FALSE, stringsAsFactors=FALSE, quote="", comment.char="")
+ref <- metadata[,1]
+refsize <- as.numeric(metadata[,2])
 
 x <- read.table(output_ic, sep="\t", comment.char="", header=T, quote="")
 np <- length(ref) * 2
@@ -1002,7 +1011,7 @@ ifelse(length(ref) > 1, linepos <- rep(c(3,2,2,3), length(ref)/2), linepos <- 2)
 refpos <- rep(c(max(range(x$Relative.entropy)), max(range(x$Relative.entropy))-0.1), length(ref))
 png(output_png, width=1000, height=700)
 layout(matrix(1:np,2,np/2,byrow=TRUE),s); par(oma=c(3,2,3,4));
-for (i in 1:length(ref)) {
+for (i in seq_along(ref)) {
   ifelse(i == 1, par(mar=c(0,2,4,0)), par(mar=c(0,0,4,0)))
   if (nrow(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i],]) > 0) {
     plot(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i], c("Bin.coord","Relative.entropy")], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
@@ -1017,7 +1026,7 @@ for (i in 1:length(ref)) {
   }
   ifelse(i == 1, axis(2, ylim=range(x$Relative.entropy), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=range(x$Relative.entropy), cex.axis=1.25), NA))
 } 
-for (i in 1:length(ref)) {
+for (i in seq_along(ref)) {
   ifelse(i == 1, par(mar=c(4,2,0,0)), par(mar=c(4,0,0,0)))
   if (nrow(x[x$Bin.coord < 0 & x$X..Chromosome == ref[i],]) > 0) {
     plot(-x$Bin.coord[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], x$Relative.entropy[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=rev(range(x$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
@@ -1040,13 +1049,13 @@ __END__
 } else {
 print $rh <<'__END__';
 args <- commandArgs(trailingOnly = TRUE)
-refnames_str <- args[1]
-refsizes_str <- args[2]
-output_ic <- args[3]
-output_png <- args[4]
+ref_metadata_file <- args[1]
+output_ic <- args[2]
+output_png <- args[3]
 
-ref <- unlist(strsplit(refnames_str, ","))
-refsize <- as.numeric(unlist(strsplit(refsizes_str, ",")))
+metadata <- read.table(ref_metadata_file, sep="\t", header=FALSE, stringsAsFactors=FALSE, quote="", comment.char="")
+ref <- metadata[,1]
+refsize <- as.numeric(metadata[,2])
 
 x <- read.table(output_ic, sep="\t", comment.char="", header=T, quote="")
 np <- length(ref) * 2
@@ -1056,7 +1065,7 @@ ifelse(length(ref) > 1, linepos <- rep(c(3,2,2,3), length(ref)/2), linepos <- 2)
 refpos <- rep(c(max(range(x$Relative.entropy)), max(range(x$Relative.entropy))-0.1), length(ref))
 png(output_png, width=1000, height=700)
 layout(matrix(1:np,2,np/2,byrow=TRUE),s); par(oma=c(3,2,3,1));
-for (i in 1:length(ref)) {
+for (i in seq_along(ref)) {
   ifelse(i == 1, par(mar=c(0,2,4,0)), par(mar=c(0,0,4,0)))
   plot(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i], c("Bin.coord","Relative.entropy")], type="o", cex=0.5, ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
   if (i %% 2 == 1) {
@@ -1066,7 +1075,7 @@ for (i in 1:length(ref)) {
   }
   ifelse(i == 1, axis(2, ylim=range(x$Relative.entropy), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=range(x$Relative.entropy), cex.axis=1.25), NA))
 } 
-for (i in 1:length(ref)) {
+for (i in seq_along(ref)) {
   ifelse(i == 1, par(mar=c(4,2,0,0)), par(mar=c(4,0,0,0)))
   plot(-x$Bin.coord[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], x$Relative.entropy[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], type="o", cex=0.5, ylim=rev(range(x$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
   if (i %% 2 == 0) {
@@ -1084,9 +1093,9 @@ __END__
 }
 close($rh) or die "Error closing R script temp file: $!\n";
 if ($pval) {
-    system($R_command, "--vanilla", $r_file, $refnames, $refsizes, $output_ic, $output_png, $fdr) == 0 or die "Rscript failed: $!\n";
+    system($R_command, "--vanilla", $r_file, $ref_metadata_file, $output_ic, $output_png, $fdr) == 0 or die "Rscript failed: $!\n";
 } else {
-    system($R_command, "--vanilla", $r_file, $refnames, $refsizes, $output_ic, $output_png) == 0 or die "Rscript failed: $!\n";
+    system($R_command, "--vanilla", $r_file, $ref_metadata_file, $output_ic, $output_png) == 0 or die "Rscript failed: $!\n";
 }
 #=end GHOSTCODE
 
