@@ -30,6 +30,8 @@ use File::Spec;
 #@@@@@@@@@@@
 my $tempdir = File::Spec->rel2abs(File::Temp::tempdir("svre_XXXXXXXX", TMPDIR => 1, CLEANUP => 1));
 my $command_line = join (" ", $0, @ARGV); chomp $command_line;
+# Security: Sanitize command line for logging to prevent log injection
+$command_line =~ s/[\r\n]/ /g;
 my $read;	# the main data file
 my $r1 = "";	# sam/bam file 1
 my $r2 = "";	# sam/bam file 2
@@ -171,6 +173,10 @@ die "Error: ywindow must be a valid non-negative number\n" if !sv::isfloat($ywin
 die "Error: cov must be a valid number between 1 and 1,000,000\n" if !sv::isfloat($cov_bin) or $cov_bin <= 0 or $cov_bin > 1000000;
 die "Error: mapq must be a valid non-negative number\n" if !sv::isfloat($mapq_min) or $mapq_min < 0;
 
+# Security: Validate additional parameters
+die "Error: ori must be either FR or FF\n" if $ori ne "FR" and $ori ne "FF";
+die "Error: range must be a valid non-negative number\n" if !sv::isfloat($range_cluster) or $range_cluster < 0;
+
 if ($samtools_command eq '') {
     die "Error: samtools not found in PATH. Please install samtools.\n";
 }
@@ -214,9 +220,9 @@ if ($r1 ne "" && -f $r1 && $r2 ne "" && -f $r2) {
     die "Error: Output prefix cannot start with a pipe character\n";
   }
 
-  # Security: Mitigate SSRF in R's read.table/plot
+  # Security: Prevent SSRF in R by blocking protocol strings in output path
   if ($output =~ /:\/\//) {
-    die "Error: Output prefix cannot contain a protocol (://)\n";
+    die "Error: Output prefix cannot contain a protocol string (://)\n";
   }
 
   $output = File::Spec->rel2abs($output);
