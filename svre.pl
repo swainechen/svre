@@ -401,24 +401,24 @@ if (-B $r1) {
 while (<$rh1>) {
 #  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
   if ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+mem/) {
-    next if $_ !~ /NM\:i\:0/;
-    next if $_ !~ /XS\:i\:0/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tXS:i:0(\t|\r?\n|$)/;
 #  } elsif ($mapper eq "bwa") {
   } elsif ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+sam[ps]e/) {
-    next if $_ !~ /XT\:A\:U/;
-    next if $_ !~ /NM\:i\:0/;
-    next if $_ !~ /XM\:i\:0/;
-    next if $_ !~ /X0\:i\:1/;
+    next if $_ !~ /\tXT:A:U(\t|\r?\n|$)/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tXM:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tX0:i:1(\t|\r?\n|$)/;
   } elsif ($mapper eq "Bowtie" || $mapper eq "bowtie") {
-    next if $_ !~ /XA\:i\:0/;
-    next if $_ !~ /NM\:i\:0/;
+    next if $_ !~ /\tXA:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
   } elsif ($mapper eq "Bowtie2" || $mapper eq "bowtie2") {
-    next if $_ !~ /XM\:i\:0/;
-    next if $_ !~ /XG\:i\:0/;
-    next if $_ !~ /XO\:i\:0/;
-    next if $_ !~ /NM\:i\:0/;
+    next if $_ !~ /\tXM:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tXG:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tXO:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
   } else {
-    next if $_ !~ /NM\:i\:0/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
   }
   @f = split /\t/, $_;
   # sam flag 4 is unmapped, 16 is reverse strand map for the read
@@ -445,24 +445,24 @@ if (-B $r2) {
 while (<$rh2>){
 #  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
   if ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+mem/) {
-    next if $_ !~ /NM\:i\:0/;
-    next if $_ !~ /XS\:i\:0/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tXS:i:0(\t|\r?\n|$)/;
 #  } elsif ($mapper eq "bwa") {
   } elsif ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+sam[ps]e/) {
-    next if $_ !~ /XT\:A\:U/;
-    next if $_ !~ /NM\:i\:0/;
-    next if $_ !~ /XM\:i\:0/;
-    next if $_ !~ /X0\:i\:1/;
+    next if $_ !~ /\tXT:A:U(\t|\r?\n|$)/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tXM:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tX0:i:1(\t|\r?\n|$)/;
   } elsif ($mapper eq "Bowtie" || $mapper eq "bowtie") {
-    next if $_ !~ /XA\:i\:0/;
-    next if $_ !~ /NM\:i\:0/;
+    next if $_ !~ /\tXA:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
   } elsif ($mapper eq "Bowtie2" || $mapper eq "bowtie2") {
-    next if $_ !~ /XM\:i\:0/;
-    next if $_ !~ /XG\:i\:0/;
-    next if $_ !~ /XO\:i\:0/;
-    next if $_ !~ /NM\:i\:0/;
+    next if $_ !~ /\tXM:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tXG:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tXO:i:0(\t|\r?\n|$)/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
   } else {
-    next if $_ !~ /NM\:i\:0/;
+    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
   }
   @f = split /\t/, $_;
   next if $f[1] & 4;
