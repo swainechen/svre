@@ -141,7 +141,7 @@ my $mapq_min = 30;
 #@@@@@@@@@@@@@@@@@
 # Program options 
 #@@@@@@@@@@@@@@@@@
-&Getopt::Long::Configure("pass_through");
+&Getopt::Long::Configure("no_pass_through");
 GetOptions(
   "r1=s" => \$r1,
   "r2=s" => \$r2,
@@ -174,8 +174,13 @@ die "Error: cov must be a valid number between 1 and 1,000,000\n" if !sv::isfloa
 die "Error: mapq must be a valid non-negative number\n" if !sv::isfloat($mapq_min) or $mapq_min < 0;
 
 # Security: Validate additional parameters
+die "Error: start must be a valid number\n" if !sv::isfloat($start);
+die "Error: end must be a valid number\n" if !sv::isfloat($end);
 die "Error: ori must be either FR or FF\n" if $ori ne "FR" and $ori ne "FF";
 die "Error: range must be a valid non-negative number\n" if !sv::isfloat($range_cluster) or $range_cluster < 0;
+
+# Security: Cap total bootstrap iterations to prevent CPU DoS (max 10^9 total samples)
+die "Error: total bootstrap iterations (bootstrap * cov) exceeds limit of 1,000,000,000\n" if $bootstrap * $cov_bin > 1000000000;
 
 if ($samtools_command eq '') {
     die "Error: samtools not found in PATH. Please install samtools.\n";

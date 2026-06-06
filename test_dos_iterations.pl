@@ -2,10 +2,10 @@ use strict;
 use warnings;
 my $script = 'svre.pl';
 my @tests = (
-    { name => "bootstrap high", args => ["-bootstrap", "100000001"], expected => qr/Error: bootstrap must be a valid number between 1 and 100,000,000/ },
-    { name => "cov high", args => ["-cov", "1000001"], expected => qr/Error: cov must be a valid number between 1 and 1,000,000/ },
-    { name => "bootstrap ok", args => ["-bootstrap", "1000000", "-cov", "100"], expected => qr/Error: samtools not found in PATH|Usage:/ },
-    { name => "cov ok", args => ["-cov", "1000", "-bootstrap", "1000"], expected => qr/Error: samtools not found in PATH|Usage:/ },
+    { name => "start non-numeric", args => ["-start", "abc"], expected => qr/Value "abc" invalid for option start|Error parsing command line options/ },
+    { name => "end non-numeric", args => ["-end", "def"], expected => qr/Value "def" invalid for option end|Error parsing command line options/ },
+    { name => "bootstrap iterations over limit", args => ["-bootstrap", "1000001", "-cov", "1000"], expected => qr/Error: total bootstrap iterations \(bootstrap \* cov\) exceeds limit of 1,000,000,000/ },
+    { name => "bootstrap iterations at limit", args => ["-bootstrap", "1000000", "-cov", "1000"], expected => qr/Error: samtools not found in PATH|Usage:/ },
 );
 
 foreach my $t (@tests) {
