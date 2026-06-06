@@ -161,3 +161,8 @@
 1. Explicitly block input strings that start with `|` when they will be used as filenames in R.
 2. Use temporary files to pass large metadata collections between processes instead of relying on command-line arguments.
 3. Use robust `read.table` parameters (`quote=""`, `comment.char=""`) to handle untrusted data within files.
+
+## 2025-05-25 - Data Integrity and DoS via Negative Array Indexing in Bin Merging
+**Vulnerability:** The `sv::ric` function in `sv.pm` was susceptible to data corruption and script crashes (DoS) when processing chromosomes with exactly one small genomic bin. Due to Perl's negative array indexing, a check for the "previous" bin (`$sortbin[$#sortbin - 1]`) would return the first bin itself if only one existed, causing the bin to merge with itself (doubling its count) and then delete itself.
+**Learning:** In languages that support negative array indexing (like Perl or Python), boundary checks using offsets from the array length must explicitly verify that the array has sufficient elements to prevent unintentional self-reference or wrap-around behavior.
+**Prevention:** Always use `scalar(@array) >= N` or explicit index bounds checks before accessing array elements using negative offsets or calculated indices near the boundaries.

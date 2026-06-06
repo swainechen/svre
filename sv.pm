@@ -1129,6 +1129,9 @@ sub ric {
       $rcount = $count->{$ref}->{$bin}->{rcount};
       $bin_size = $count->{$ref}->{$bin}->{pos};
 
+      # Security: Ensure merging only happens if at least two bins exist for the chromosome.
+      # This prevents a single small bin from merging with itself (due to Perl's negative
+      # array indexing) and then being deleted, which causes data corruption and DoS.
       if ($bin == $sortbin[0] && defined($sortbin[1]) && $rcount < $cov_bin/2) {
         $count->{$ref}->{$sortbin[1]}->{rcount} += $rcount;
         $count->{$ref}->{$sortbin[1]}->{pos} += $bin_size;
@@ -1142,8 +1145,8 @@ sub ric {
         delete($count->{$ref}->{$sortbin[0]});
         next BIN;
       }
-	  
-      if (defined($sortbin[$#sortbin - 1]) && $bin == $sortbin[$#sortbin - 1] && $count->{$ref}->{$sortbin[$#sortbin]}->{rcount} < $cov_bin/2) {
+
+      if (scalar(@sortbin) >= 2 && defined($sortbin[$#sortbin - 1]) && $bin == $sortbin[$#sortbin - 1] && $count->{$ref}->{$sortbin[$#sortbin]}->{rcount} < $cov_bin/2) {
         $count->{$ref}->{$bin}->{rcount} += $count->{$ref}->{$sortbin[$#sortbin]}->{rcount};
         $count->{$ref}->{$bin}->{pos} += $count->{$ref}->{$sortbin[$#sortbin]}->{pos};
         push @{$count->{$ref}->{$bin}->{pair}}, @{$count->{$ref}->{$sortbin[$#sortbin]}->{pair}};
