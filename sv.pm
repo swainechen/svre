@@ -1135,7 +1135,7 @@ sub ric {
       if ($bin == $sortbin[0] && defined($sortbin[1]) && $rcount < $cov_bin/2) {
         $count->{$ref}->{$sortbin[1]}->{rcount} += $rcount;
         $count->{$ref}->{$sortbin[1]}->{pos} += $bin_size;
-        push @{$count->{$ref}->{$sortbin[1]}->{pair}}, @{$count->{$ref}->{$bin}->{pair}};
+        push @{$count->{$ref}->{$sortbin[1]}->{pair}}, @{$count->{$ref}->{$bin}->{pair} // []};
         foreach $dist (keys %{$count->{$ref}->{$bin}}) {
           next if $dist eq "pair";
           next if $dist eq "rcount";
@@ -1149,7 +1149,7 @@ sub ric {
       if (scalar(@sortbin) >= 2 && defined($sortbin[$#sortbin - 1]) && $bin == $sortbin[$#sortbin - 1] && $count->{$ref}->{$sortbin[$#sortbin]}->{rcount} < $cov_bin/2) {
         $count->{$ref}->{$bin}->{rcount} += $count->{$ref}->{$sortbin[$#sortbin]}->{rcount};
         $count->{$ref}->{$bin}->{pos} += $count->{$ref}->{$sortbin[$#sortbin]}->{pos};
-        push @{$count->{$ref}->{$bin}->{pair}}, @{$count->{$ref}->{$sortbin[$#sortbin]}->{pair}};
+        push @{$count->{$ref}->{$bin}->{pair}}, @{$count->{$ref}->{$sortbin[$#sortbin]}->{pair} // []};
         foreach $dist (keys %{$count->{$ref}->{$sortbin[$#sortbin]}}) {
           next if $dist eq "pair";
           next if $dist eq "rcount";
