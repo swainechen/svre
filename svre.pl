@@ -833,12 +833,24 @@ if ($optimise_cov) {
   $ri = $max_ri;
   $count = $max_count;
   $cov_bin = $max_cov;
-#  printf STDERR "Optimal coverage bin: %d (~%d coverage bins)\n", $cov_bin, ($both + $single)/$cov_bin if !$quiet;
-  printf STDERR "Optimal coverage bin: %d (~%d coverage bins, average %d bp)\n", $cov_bin, $both/$cov_bin, $genome_size/$both*$cov_bin if !$quiet;
 } else {
   ($ri, $count) = sv::ric($refh, $precount, $cov_bin, $global_dist);
   $snr = sv::snr($ri);
-  printf STDERR "Coverage bin: %d (~%d coverage bins, average %d bp); SNR: %.2f\n", $cov_bin, $both/$cov_bin, $genome_size/$both*$cov_bin, $snr if !$quiet;
+}
+
+# Security: Re-validate coverage bin and bootstrap limit after potential optimization
+# to prevent resource exhaustion (CPU/Memory DoS) from extreme bin sizes or iteration counts.
+die "Error: coverage bin ($cov_bin) exceeds limit of 1,000,000\n" if $cov_bin > 1000000;
+if ($bootstrap * $cov_bin > 1000000000) {
+  die "Error: total bootstrap iterations (bootstrap * cov) exceeds limit of 1,000,000,000. Please reduce -bootstrap or -cov.\n";
+}
+
+if (!$quiet) {
+  if ($optimise_cov) {
+    printf STDERR "Optimal coverage bin: %d (~%d coverage bins, average %d bp); SNR: %.2f\n", $cov_bin, $both/$cov_bin, $genome_size/$both*$cov_bin, $max_snr;
+  } else {
+    printf STDERR "Coverage bin: %d (~%d coverage bins, average %d bp); SNR: %.2f\n", $cov_bin, $both/$cov_bin, $genome_size/$both*$cov_bin, $snr;
+  }
 }
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
