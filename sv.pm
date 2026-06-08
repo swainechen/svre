@@ -1194,6 +1194,8 @@ sub pval_BY {
   my ($p) = @_;	# $p should be a ref to an array, sorted in increasing order
   my $return = {};
   my $n = scalar(@$p);
+  # Security: explicitly return empty hash if input is empty
+  return {} if $n == 0;
   my $i;
   my @sofar = ();
   my $q = 0;
