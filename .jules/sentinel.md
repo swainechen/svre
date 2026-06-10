@@ -162,6 +162,11 @@
 2. Use temporary files to pass large metadata collections between processes instead of relying on command-line arguments.
 3. Use robust `read.table` parameters (`quote=""`, `comment.char=""`) to handle untrusted data within files.
 
+## 2025-06-25 - Regex Line Anchor Bypass (Newline Injection) in Perl
+**Vulnerability:** Use of the `$` anchor in validation regexes allowed strings with trailing newlines to pass as valid numeric or coordinate data. This could lead to log injection or logic bypasses when the data is later used.
+**Learning:** In Perl, the `$` anchor matches at the end of the string OR before a newline at the end of the string. The `\z` anchor is the strict end-of-string anchor.
+**Prevention:** Always use `\z` instead of `$` for strict end-of-string validation in Perl. Avoid `chomp` within validation functions if they are intended to be pure validators, as `chomp` modifies the input (if not used on a copy) and can mask malformed data.
+
 ## 2025-05-25 - Data Integrity and DoS via Negative Array Indexing in Bin Merging
 **Vulnerability:** The `sv::ric` function in `sv.pm` was susceptible to data corruption and script crashes (DoS) when processing chromosomes with exactly one small genomic bin. Due to Perl's negative array indexing, a check for the "previous" bin (`$sortbin[$#sortbin - 1]`) would return the first bin itself if only one existed, causing the bin to merge with itself (doubling its count) and then delete itself.
 **Learning:** In languages that support negative array indexing (like Perl or Python), boundary checks using offsets from the array length must explicitly verify that the array has sufficient elements to prevent unintentional self-reference or wrap-around behavior.
