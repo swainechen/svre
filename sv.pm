@@ -171,11 +171,12 @@ sub overlap {
   my @r = split /,/, $r;
   my @s = split /,/, $s;
   foreach $i (@r) {
-    if (isfloat($i)) {
-      $f1 = $i;
-      $l1 = $i;
+    ($f1, $l1) = split /\.\./, $i;
+    $f1 =~ s/___.*$//;
+    if (defined $l1) {
+      $l1 =~ s/___.*$//;
     } else {
-      ($f1, $l1) = split /\.\./, $i;
+      $l1 = $f1;
     }
     $f1 = abs($f1);
     $l1 = abs($l1);
@@ -185,11 +186,12 @@ sub overlap {
       $l1 = $t;
     }
     foreach $j (@s) {
-      if (isfloat($j)) {
-        $f2 = $j;
-        $l2 = $j;
+      ($f2, $l2) = split /\.\./, $j;
+      $f2 =~ s/___.*$//;
+      if (defined $l2) {
+        $l2 =~ s/___.*$//;
       } else {
-        ($f2, $l2) = split /\.\./, $j;
+        $l2 = $f2;
       }
       $f2 = abs($f2);
       $l2 = abs($l2);
