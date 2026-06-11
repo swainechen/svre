@@ -173,9 +173,9 @@ sub overlap {
   my @s = split /,/, $s;
   foreach $i (@r) {
     ($f1, $l1) = split /\.\./, $i;
-    $f1 =~ s/___.*$//;
+    $f1 =~ s/___.*\z//s;
     if (defined $l1) {
-      $l1 =~ s/___.*$//;
+      $l1 =~ s/___.*\z//s;
     } else {
       $l1 = $f1;
     }
@@ -188,9 +188,9 @@ sub overlap {
     }
     foreach $j (@s) {
       ($f2, $l2) = split /\.\./, $j;
-      $f2 =~ s/___.*$//;
+      $f2 =~ s/___.*\z//s;
       if (defined $l2) {
-        $l2 =~ s/___.*$//;
+        $l2 =~ s/___.*\z//s;
       } else {
         $l2 = $f2;
       }

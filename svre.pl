@@ -216,7 +216,7 @@ if ($r1 ne "" && -f $r1 && $r2 ne "" && -f $r2) {
   die "Error: Invalid character in output name\n" if $output =~ /\0/;
 
   # Security: Prevent path traversal in output name
-  if (File::Spec->canonpath($output) =~ /\.\.(\/|\\|$)/) {
+  if (File::Spec->canonpath($output) =~ /\.\.(\/|\\|\z)/) {
     die "Error: Path traversal attempt detected in output name\n";
   }
 
@@ -1421,11 +1421,11 @@ exit;
 sub keysort {
   if (sv::isfloat($a) && sv::isfloat($b)) {
     return $a <=> $b;
-  } elsif ($a =~ /^-?\d+___\S+$/ && $b =~ /^-?\d+___\S+$/) {
-    $a =~ /^(-?\d+)___(\S+$)/;
+  } elsif ($a =~ /^-?\d+___\S+\z/ && $b =~ /^-?\d+___\S+\z/) {
+    $a =~ /^(-?\d+)___(\S+\z)/;
     my $p1 = $1;
     my $r1 = $2;
-    $b =~ /^(-?\d+)___(\S+$)/;
+    $b =~ /^(-?\d+)___(\S+\z)/;
     my $p2 = $1;
     my $r2 = $2;
     if ($r1 eq $r2) {
