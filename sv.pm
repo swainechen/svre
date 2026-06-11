@@ -50,19 +50,20 @@ sub range {
   foreach $i (@$input_a) {
     @f = split /,/, $i;
     foreach $j (0..$#f) {
-      if ($f[$j] =~ /^(.+?)$ranger_re(.+?)$/) {
+      # Security: Use \z instead of $ to prevent newline bypass
+      if ($f[$j] =~ /^(.+?)$ranger_re(.+?)\z/) {
         my ($left, $right) = ($1, $2);
         my ($p0_val, $r0_val, $p1_val, $r1_val);
 
         if (isfloat($left)) {
           $p0_val = $left;
-        } elsif ($left =~ /^(-?\d+)___(\S+)$/) {
+        } elsif ($left =~ /^(-?\d+)___(\S+)\z/) {
           ($p0_val, $r0_val) = ($1, $2);
         }
 
         if (isfloat($right)) {
           $p1_val = $right;
-        } elsif ($right =~ /^(-?\d+)___(\S+)$/) {
+        } elsif ($right =~ /^(-?\d+)___(\S+)\z/) {
           ($p1_val, $r1_val) = ($1, $2);
         }
 
@@ -83,14 +84,14 @@ sub range {
       if ($#g == 0) {
         if (isfloat($g[0])) {
           push @{$arrays->{__NUMBERS__}}, [$g[0], $g[0]];
-        } elsif ($g[0] =~ /^(-?\d+)___(\S+)$/) {
+        } elsif ($g[0] =~ /^(-?\d+)___(\S+)\z/) {
           push @{$arrays->{$2}}, [$1, $1];
         }
       } elsif ($#g == 1) {
         my ($l, $ri) = ($g[0], $g[1]);
         my ($p0_v, $r0_v, $p1_v, $r1_v);
-        if (isfloat($l)) { $p0_v = $l; } elsif ($l =~ /^(-?\d+)___(\S+)$/) { ($p0_v, $r0_v) = ($1, $2); }
-        if (isfloat($ri)) { $p1_v = $ri; } elsif ($ri =~ /^(-?\d+)___(\S+)$/) { ($p1_v, $r1_v) = ($1, $2); }
+        if (isfloat($l)) { $p0_v = $l; } elsif ($l =~ /^(-?\d+)___(\S+)\z/) { ($p0_v, $r0_v) = ($1, $2); }
+        if (isfloat($ri)) { $p1_v = $ri; } elsif ($ri =~ /^(-?\d+)___(\S+)\z/) { ($p1_v, $r1_v) = ($1, $2); }
         if (defined $p0_v && defined $p1_v) {
           my $f_ref = $r0_v // $r1_v;
           my $t_key = defined $f_ref ? $f_ref : "__NUMBERS__";
@@ -147,10 +148,10 @@ sub absrange {	# same as above but return only absolute values
   foreach $i (@$a_ref) {
     if (isfloat($i)) {
       push @$abs_coords, abs($i);
-    } elsif ($i =~ /^(-?\d+)___(\S+)$/) {
+    } elsif ($i =~ /^(-?\d+)___(\S+)\z/) {
       push @$abs_coords, abs($1) . "___" . $2;
     } else {
-      if ($i =~ /^(-?\d+)\.\.(-?\d+)(?:___(\S+))?$/) {
+      if ($i =~ /^(-?\d+)\.\.(-?\d+)(?:___(\S+))?\z/) {
         my $suffix = defined $3 ? "___$3" : "";
         push @$abs_coords, abs($1) . ".." . abs($2) . $suffix;
       }
@@ -1039,8 +1040,8 @@ sub isfloat {
   if (!defined $string) {
     return 0;
   }
-  chomp $string;
-  if ($string =~ /^([+-])?(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/) {
+  # Security: Use \z instead of $ to prevent matching strings with trailing newlines (Log Injection/Bypass)
+  if ($string =~ /^([+-])?(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?\z/) {
     return 1;
   } else {
     return 0;
@@ -1263,7 +1264,7 @@ sub unwind_distance {
     next if !defined $precount->{$ref}->{$i}->{$dist};
     next if !defined $precount->{$ref}->{$i}->{pair};	# should never happen
     foreach $j (@{$precount->{$ref}->{$i}->{pair}}) {
-      next if $j !~ /^[+-]?\d+$/;
+      next if $j !~ /^[+-]?\d+\z/;
       if ($j > $i) {
         $r->{first} = 1;
       } else {
