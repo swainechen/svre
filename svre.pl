@@ -1174,7 +1174,7 @@ if ($pval) {
           my $t_ref = $dist;
           $t_ref =~ s/^-?\d+___//;
           my $t_pos = $dist;
-          $t_pos =~ s/___.*$//;
+          $t_pos =~ s/___.*\z//s;
           my $t_ref_len = defined $refh->{$t_ref} ? $refh->{$t_ref} : 10000000;
           $sv->{$dist}->{target} = sv::refadd($t_pos, -($ri->{$ref}->{$bin}->{binsize}), $t_ref_len) . ".." . sv::refadd($t_pos, $ri->{$ref}->{$bin}->{binsize}, $t_ref_len) . "___$t_ref";
           next;
@@ -1295,6 +1295,7 @@ if ($pval) {
               $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.-?\d+)?___//;
               $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
               $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
+              $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
             }
           }
           # Fix: Correctly initialize variables for the next group using current element
@@ -1322,6 +1323,7 @@ if ($pval) {
           $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.-?\d+)?___//;
           $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
           $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
+          $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
         }
       }
       if ($bin >= 0) {

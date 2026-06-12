@@ -214,6 +214,8 @@ sub overlap {
 
 # check if given number is within an array of numbers
 sub pair_check {
+  # Security: harden against DoS by validating array reference and arguments
+  return () if !defined $_[0] || ref($_[0]) ne 'ARRAY' || !defined $_[1];
   my @pairs = @{$_[0]}; # always pass the array as a reference to the sub when calling
   my $a_string = $_[1];  # joined (with ,) string of numbers or ranges 
   my $pos = $_[2];
