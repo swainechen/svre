@@ -314,7 +314,8 @@ foreach $i (@samheader1) {
         $j = $1;
       }
     }
-    if ($ref ne "" && $j) {
+    if ($ref ne "") {
+      die "Error: Missing or zero length (LN) for chromosome $ref in SAM header 1\n" if !$j || $j <= 0;
       $refh->{$ref} = $j;
     }
   }
@@ -343,10 +344,14 @@ foreach $i (@samheader2) {
         $j = $1;
       }
     }
-    if ($ref ne "" && $j) {
-     die "SAM headers don't match on line $i\n" if !defined $refh->{$ref} || $refh->{$ref} != $j;
+    if ($ref ne "") {
+     die "Error: Missing or zero length (LN) for chromosome $ref in SAM header 2\n" if !$j || $j <= 0;
+     die "SAM headers don't match for chromosome $ref\n" if !defined $refh->{$ref} || $refh->{$ref} != $j;
     }
   }
+}
+if (! %$refh) {
+  die "Error: No valid chromosomes found in SAM headers. Check that your BAM files have \@SQ lines.\n";
 }
 
 #@@@@@@@@@@@@@@@@@@@@@
@@ -1175,7 +1180,8 @@ if ($pval) {
           $t_ref =~ s/^-?\d+___//;
           my $t_pos = $dist;
           $t_pos =~ s/___.*\z//s;
-          my $t_ref_len = defined $refh->{$t_ref} ? $refh->{$t_ref} : 10000000;
+          die "Error: Translocation target reference $t_ref not found in SAM header\n" if !defined $refh->{$t_ref};
+          my $t_ref_len = $refh->{$t_ref};
           $sv->{$dist}->{target} = sv::refadd($t_pos, -($ri->{$ref}->{$bin}->{binsize}), $t_ref_len) . ".." . sv::refadd($t_pos, $ri->{$ref}->{$bin}->{binsize}, $t_ref_len) . "___$t_ref";
           next;
         }
