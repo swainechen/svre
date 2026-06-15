@@ -1254,81 +1254,81 @@ if ($pval) {
         }
       }
       my $pos_e = 0;
-      foreach $i (keys %$sv) {
-        $pos_e += $sv->{$i}->{entropy};
+      foreach my $idx (keys %$sv) {
+        $pos_e += $sv->{$idx}->{entropy};
       }
       my @out = ();
-      @f = sort keysort keys %$sv;
-      @r = ();
-      $j = 0;
-      $key = "";
+      my @sorted_dist_keys = sort keysort keys %$sv;
+      my @current_targets = ();
+      my $current_conf = 0;
+      my $current_type = "";
       # targets at this point can only be ints or \d+___ref
       # actually change targets to ranges
-      foreach $i (0..$#f) {
-        if ($j == 0) {
-          $j = ($pos_e != 0) ? $sv->{$f[$i]}->{entropy}/$pos_e : 0;
-          $key = $sv->{$f[$i]}->{type};
-          @r = ($sv->{$f[$i]}->{target});
+      foreach my $idx (0..$#sorted_dist_keys) {
+        if ($current_conf == 0) {
+          $current_conf = ($pos_e != 0) ? $sv->{$sorted_dist_keys[$idx]}->{entropy}/$pos_e : 0;
+          $current_type = $sv->{$sorted_dist_keys[$idx]}->{type};
+          @current_targets = ($sv->{$sorted_dist_keys[$idx]}->{target});
           next;
         }
-        if ($sv->{$f[$i]}->{type} eq "Translocation" &&
-            $key eq "Translocation" &&
-            $sv->{$f[$i]}->{target} eq $sv->{$f[$i-1]}->{target}) {
-          $j += ($pos_e != 0) ? $sv->{$f[$i]}->{entropy}/$pos_e : 0;
-          @r = ($sv->{$f[$i]}->{target});
-        } elsif (sv::isfloat($f[$i]) && sv::isfloat($f[$i-1]) &&
-                 $f[$i] - $f[$i-1] <= $ywin &&
-                 $sv->{$f[$i]}->{type} eq $key) {
-          $j += ($pos_e != 0) ? $sv->{$f[$i]}->{entropy}/$pos_e : 0;
-          push @r, $sv->{$f[$i]}->{target};
+        if ($sv->{$sorted_dist_keys[$idx]}->{type} eq "Translocation" &&
+            $current_type eq "Translocation" &&
+            $sv->{$sorted_dist_keys[$idx]}->{target} eq $sv->{$sorted_dist_keys[$idx-1]}->{target}) {
+          $current_conf += ($pos_e != 0) ? $sv->{$sorted_dist_keys[$idx]}->{entropy}/$pos_e : 0;
+          @current_targets = ($sv->{$sorted_dist_keys[$idx]}->{target});
+        } elsif (sv::isfloat($sorted_dist_keys[$idx]) && sv::isfloat($sorted_dist_keys[$idx-1]) &&
+                 $sorted_dist_keys[$idx] - $sorted_dist_keys[$idx-1] <= $ywin &&
+                 $sv->{$sorted_dist_keys[$idx]}->{type} eq $current_type) {
+          $current_conf += ($pos_e != 0) ? $sv->{$sorted_dist_keys[$idx]}->{entropy}/$pos_e : 0;
+          push @current_targets, $sv->{$sorted_dist_keys[$idx]}->{target};
         } else {
-          if ($j > $fdr) {
+          if ($current_conf > $fdr) {
             $merge_i++;
-            $merge_sv->{$merge_i}->{type} = $key;
-            @{$merge_sv->{$merge_i}->{confidence}} = ($j);
-            if ($key ne "Translocation") {
-              push @out, sprintf("%s:%s(%.2f)", $key, sv::range(\@r, $range_cluster), $j);
+            $merge_sv->{$merge_i}->{type} = $current_type;
+            @{$merge_sv->{$merge_i}->{confidence}} = ($current_conf);
+            if ($current_type ne "Translocation") {
+              push @out, sprintf("%s:%s(%.2f)", $current_type, sv::range(\@current_targets, $range_cluster), $current_conf);
               $merge_sv->{$merge_i}->{bp1}->{ref} = $ref;
               $merge_sv->{$merge_i}->{bp2}->{ref} = $ref;
               $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
-              $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
+              $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
             } else {
-              push @out, sprintf("%s:%s(%.2f)", $key, $r[0], $j);
+              push @out, sprintf("%s:%s(%.2f)", $current_type, $current_targets[0], $current_conf);
               $merge_sv->{$merge_i}->{bp1}->{ref} = $ref;
               # Fix: Use the correct reference from the group being reported.
               # Security: Robustly strip metadata prefix to prevent variable contamination.
-              $merge_sv->{$merge_i}->{bp2}->{ref} = $r[0];
+              $merge_sv->{$merge_i}->{bp2}->{ref} = $current_targets[0];
               $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.-?\d+)?___//;
               $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
-              $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
+              $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
               $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
             }
           }
           # Fix: Correctly initialize variables for the next group using current element
-          $j = ($pos_e != 0) ? $sv->{$f[$i]}->{entropy}/$pos_e : 0;
-          $key = $sv->{$f[$i]}->{type};
-          @r = ($sv->{$f[$i]}->{target});
+          $current_conf = ($pos_e != 0) ? $sv->{$sorted_dist_keys[$idx]}->{entropy}/$pos_e : 0;
+          $current_type = $sv->{$sorted_dist_keys[$idx]}->{type};
+          @current_targets = ($sv->{$sorted_dist_keys[$idx]}->{target});
         }
       }
-      if ($j > $fdr) {
+      if ($current_conf > $fdr) {
         $merge_i++;
-        $merge_sv->{$merge_i}->{type} = $key;
-        @{$merge_sv->{$merge_i}->{confidence}} = ($j);
-        if ($key ne "Translocation") {	# not a translocation
-          push @out, sprintf("%s:%s(%.2f)", $key, sv::range(\@r, $ri->{$ref}->{$bin}->{binsize}), $j);
+        $merge_sv->{$merge_i}->{type} = $current_type;
+        @{$merge_sv->{$merge_i}->{confidence}} = ($current_conf);
+        if ($current_type ne "Translocation") {	# not a translocation
+          push @out, sprintf("%s:%s(%.2f)", $current_type, sv::range(\@current_targets, $ri->{$ref}->{$bin}->{binsize}), $current_conf);
           $merge_sv->{$merge_i}->{bp1}->{ref} = $ref;
           $merge_sv->{$merge_i}->{bp2}->{ref} = $ref;
           $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
-          $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
+          $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
         } else {		# a translocation
-          push @out, sprintf("%s:%s(%.2f)", $key, $r[0], $j);
+          push @out, sprintf("%s:%s(%.2f)", $current_type, $current_targets[0], $current_conf);
           $merge_sv->{$merge_i}->{bp1}->{ref} = $ref;
           # Fix: Use the correct reference from the group being reported.
           # Security: Robustly strip metadata prefix to prevent variable contamination.
-          $merge_sv->{$merge_i}->{bp2}->{ref} = $r[0];
+          $merge_sv->{$merge_i}->{bp2}->{ref} = $current_targets[0];
           $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.-?\d+)?___//;
           $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
-          $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@r, $range_cluster);
+          $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
           $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
         }
       }
@@ -1394,22 +1394,30 @@ if ($pval) {
           }
         }
       }
-      $i = join (",", $merge_sv->{$k}->{bp1}->{coord}, $merge_sv->{$k}->{bp2}->{coord});
-      my @sort = split /,/, $i;
+      my $combined_coords = join (",", $merge_sv->{$k}->{bp1}->{coord}, $merge_sv->{$k}->{bp2}->{coord});
+      my @coord_parts = split /,/, $combined_coords;
       $merge_sv->{$k}->{sort} = 0;
-      foreach $i (@sort) {
-        @f = split /\.\./, $i;
-        foreach $j (@f) {
-          $merge_sv->{$k}->{sort} = $j if $merge_sv->{$k}->{sort} == 0;
-          $merge_sv->{$k}->{sort} = $j if $merge_sv->{$k}->{sort} > $j;
+      foreach my $coord_part (@coord_parts) {
+        my @endpoints = split /\.\./, $coord_part;
+        foreach my $endpoint (@endpoints) {
+          # Security: strip suffix before numeric comparison to ensure robustness
+          my $val = $endpoint;
+          $val =~ s/___.*\z//s;
+          if (sv::isfloat($val)) {
+            $merge_sv->{$k}->{sort} = $val if $merge_sv->{$k}->{sort} == 0;
+            $merge_sv->{$k}->{sort} = $val if $merge_sv->{$k}->{sort} > $val;
+          }
         }
       }
       # these are all supposed to be ranged and positive now
-      $merge_sv->{$k}->{bp1}->{coord} =~ /(^\d+)/;
-      $i = $1;
-      $merge_sv->{$k}->{bp2}->{coord} =~ /(^\d+)/;
-      $j = $1;
-      if ($i > $j) {
+      my ($bp1_start, $bp2_start);
+      if ($merge_sv->{$k}->{bp1}->{coord} =~ /(^\d+)/) {
+        $bp1_start = $1;
+      }
+      if ($merge_sv->{$k}->{bp2}->{coord} =~ /(^\d+)/) {
+        $bp2_start = $1;
+      }
+      if (defined $bp1_start && defined $bp2_start && $bp1_start > $bp2_start) {
         my $temp = $merge_sv->{$k}->{bp1};
         $merge_sv->{$k}->{bp1} = $merge_sv->{$k}->{bp2};
         $merge_sv->{$k}->{bp2} = $temp;
@@ -1429,18 +1437,20 @@ exit;
 sub keysort {
   if (sv::isfloat($a) && sv::isfloat($b)) {
     return $a <=> $b;
-  } elsif ($a =~ /^-?\d+___\S+\z/ && $b =~ /^-?\d+___\S+\z/) {
-    $a =~ /^(-?\d+)___(\S+\z)/;
-    my $p1 = $1;
-    my $r1 = $2;
-    $b =~ /^(-?\d+)___(\S+\z)/;
-    my $p2 = $1;
-    my $r2 = $2;
-    if ($r1 eq $r2) {
-      return $p1 <=> $p2;
+  } elsif ($a =~ /^(-?\d+)___(\S+)\z/) {
+    my ($p1, $r1) = ($1, $2);
+    if ($b =~ /^(-?\d+)___(\S+)\z/) {
+      my ($p2, $r2) = ($1, $2);
+      if ($r1 eq $r2) {
+        return $p1 <=> $p2;
+      } else {
+        return $r1 cmp $r2;
+      }
     } else {
-      return $r1 cmp $r2;
+      return 1; # a has suffix, b doesn't, so b comes first
     }
+  } elsif ($b =~ /^(-?\d+)___(\S+)\z/) {
+    return -1; # b has suffix, a doesn't, so a comes first
   } else {
     return $a cmp $b;
   }
