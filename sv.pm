@@ -431,7 +431,11 @@ sub snr {
   foreach $w1 (keys %$ri) {	# ref
     foreach $w2 (keys %{$ri->{$w1}}) {	# bin
       my $e = $ri->{$w1}->{$w2}->{entropy};
-      push @ric, $e if isfloat($e);
+      # Security: Filter out non-finite values (Inf/NaN) and handle precision
+      # finiteness check: $e + 0 != $e + 1 is false for Inf/NaN
+      if (isfloat($e) && $e + 0 != $e + 1) {
+        push @ric, $e;
+      }
     }
   }
   @ric = sort {$a <=> $b} @ric;
@@ -457,7 +461,10 @@ sub snr {
   }
   my $total_n = scalar(@ric);
 
-  for ($i = $ric[0]; $i <= $ric[$#ric]; $i += $resolution) {
+  # Security: Bound iterations to prevent CPU DoS and ensure progression
+  my $iter_count = 0;
+  for ($i = $ric[0]; $i <= $ric[$#ric] && $iter_count < 1000000; $i += $resolution) {
+    $iter_count++;
     ($min, $max) = sv::binary_search(\@ric, $i);
     last if $min == $#ric;
 
@@ -495,6 +502,7 @@ sub snr {
         $vmin = $v;
       }
     }
+    last if $i + $resolution <= $i; # Safety check for precision limits
   }
 
   ($min, $max) = sv::binary_search(\@ric, $t); 
