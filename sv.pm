@@ -1319,7 +1319,10 @@ sub refmod {
   my ($coord, $ref) = @_;
 
   # Security: prevent division-by-zero or infinite loops if ref is 0 or negative
-  return $coord if !$ref || $ref <= 0;
+  if (!$ref || $ref <= 0) {
+    warn "Warning: reference length must be strictly positive in sv::refmod. Returning un-normalized coordinate.\n";
+    return $coord;
+  }
 
   if ($coord == 0) {
     return $ref;
@@ -1346,7 +1349,11 @@ sub refadd {
   my ($a_val, $b_val, $ref) = @_;
   my $return;
   return $a_val if $b_val == 0;
-  $ref = 10000000 if $ref <= 0;
+  # Security: ensure reference length is strictly positive to prevent coordinate corruption (DoS)
+  if (!$ref || $ref <= 0) {
+    warn "Warning: reference length must be strictly positive in sv::refadd. Using default constant.\n";
+    $ref = 10000000;
+  }
   my $a_temp = $a_val;
   $a_temp = $ref if $a_temp == 0;
   $return = $a_temp + $b_val;
