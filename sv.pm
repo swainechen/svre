@@ -36,6 +36,8 @@ use List::Util qw(min max sum);
 # accept a range interval
 sub range {
   my ($input_a, $r) = @_; # $input_a is a reference to an array, $r is range
+  # Security: harden against DoS by validating array reference
+  return "" if !defined $input_a || ref($input_a) ne 'ARRAY';
   return "" if !defined $r;
   my $ranger = "..";
   my $ranger_re = $ranger;
@@ -48,6 +50,7 @@ sub range {
   my (@f, @g);
 
   foreach $i (@$input_a) {
+    next if !defined $i;
     @f = split /,/, $i;
     foreach $j (0..$#f) {
       # Security: Use \z instead of $ to prevent newline bypass
@@ -143,9 +146,12 @@ sub range {
 sub absrange {	# same as above but return only absolute values
 		# preserves chromosome suffixes (e.g. 100___ref)
   my ($a_ref, $r_val) = @_;
+  # Security: harden against DoS by validating array reference
+  return "" if !defined $a_ref || ref($a_ref) ne 'ARRAY';
   my $abs_coords = [];
   my $i;
   foreach $i (@$a_ref) {
+    next if !defined $i;
     if (isfloat($i)) {
       push @$abs_coords, abs($i);
     } elsif ($i =~ /^(-?\d+)___(\S+)\z/) {
@@ -394,16 +400,21 @@ sub null_distribution_from_file {
 # Usage: rms_variance(info content, info content elements array, no. of bins)
 sub rms_variance {
   my $info = $_[0];
-  my @info_parts = $_[1];
+  my $info_parts_ref = $_[1];
   my $no_of_ybins = $_[2];
   my $var = 0;
 
   # Security: prevent division-by-zero if rounded no_of_ybins is 0
+  # Also validate inputs are numeric and array reference is valid
+  return 0 if !defined $info || !isfloat($info);
+  return 0 if !defined $info_parts_ref || ref($info_parts_ref) ne 'ARRAY';
+  return 0 if !defined $no_of_ybins || !isfloat($no_of_ybins);
+
   my $rounded_ybins = round($no_of_ybins);
   return 0 if $rounded_ybins <= 0;
 
   my $info_mean = $info / $rounded_ybins;
-  @info_parts = map{ ($_ - $info_mean) ** 2} @info_parts;
+  my @info_parts = map{ (($_ // 0) - $info_mean) ** 2} @$info_parts_ref;
   my $sum = sum(0, @info_parts); 
   # for those bins that don't map
   $sum += ((0-$info_mean)**2) * ($rounded_ybins - scalar(@info_parts));
@@ -973,6 +984,8 @@ sub createsv{
 # Both functions are hardened against non-numeric data and empty arrays to prevent DoS (crashes).
 sub average {
   my ($data) = @_;
+  # Security: harden against DoS by validating array reference
+  return 0 if !defined $data || ref($data) ne 'ARRAY';
   my @filtered = grep { isfloat($_) } @$data;
   return 0 unless @filtered;
   return sum(@filtered) / scalar(@filtered);
@@ -980,6 +993,8 @@ sub average {
 
 sub stdev {
   my ($data) = @_;
+  # Security: harden against DoS by validating array reference
+  return 0 if !defined $data || ref($data) ne 'ARRAY';
   my @filtered = grep { isfloat($_) } @$data;
   my $n = scalar(@filtered);
   return 0 if $n < 2;
