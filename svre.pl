@@ -888,6 +888,14 @@ my @reforder = sort { $refh->{$b} <=> $refh->{$a} || $a cmp $b } keys %$refh;
 # Security: Use this filtered list for both analysis and graphical output to prevent
 # Resource Exhaustion/DoS when processing many scaffolds.
 my @refnames = grep { exists $count->{$_} } @reforder;
+
+# Security: Limit the number of chromosomes plotted to prevent Resource Exhaustion (DoS)
+# when the reference genome has many scaffolds with data.
+if (scalar(@refnames) > 100) {
+  warn "Warning: Too many chromosomes with data (" . scalar(@refnames) . "). Only plotting the top 100 largest to prevent DoS.\n" if !$quiet;
+  @refnames = @refnames[0..99];
+}
+
 my @refsize = map { $refh->{$_} } @refnames;
 
 my $refnames = "";
@@ -1040,12 +1048,16 @@ x <- read.table(output_ic, sep="\t", comment.char="", header=T, quote="")
 np <- length(ref) * 2
 s <- round(log10(refsize))
 s[1] <- s[1] + 1.5
-ifelse(length(ref) > 1, linepos <- rep(c(3,2,2,3), length(ref)/2), linepos <- 2)
+if (length(ref) > 1) {
+  linepos <- rep(c(3,2,2,3), length.out = length(ref))
+} else {
+  linepos <- 2
+}
 refpos <- rep(c(max(range(x$Relative.entropy)), max(range(x$Relative.entropy))-0.1), length(ref))
 png(output_png, width=1000, height=700)
 layout(matrix(1:np,2,np/2,byrow=TRUE),s); par(oma=c(3,2,3,4));
 for (i in seq_along(ref)) {
-  ifelse(i == 1, par(mar=c(0,2,4,0)), par(mar=c(0,0,4,0)))
+  if (i == 1) { par(mar=c(0,2,4,0)) } else { par(mar=c(0,0,4,0)) }
   if (nrow(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i],]) > 0) {
     plot(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i], c("Bin.coord","Relative.entropy")], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
     points(x[x$X..Chromosome == ref[i] & x$Adjusted.P.value <= qvalue & x$Bin.coord >= 0, c("Bin.coord","Relative.entropy")], cex=0.5, pch=8, col="red")
@@ -1057,10 +1069,14 @@ for (i in seq_along(ref)) {
   } else {
     axis(3, xlim=c(0, refsize[i]), cex.axis=1.25)
   }
-  ifelse(i == 1, axis(2, ylim=range(x$Relative.entropy), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=range(x$Relative.entropy), cex.axis=1.25), NA))
+  if (i == 1) {
+    axis(2, ylim=range(x$Relative.entropy), cex.axis=1.25)
+  } else if (i == length(ref)) {
+    axis(4, ylim=range(x$Relative.entropy), cex.axis=1.25)
+  }
 } 
 for (i in seq_along(ref)) {
-  ifelse(i == 1, par(mar=c(4,2,0,0)), par(mar=c(4,0,0,0)))
+  if (i == 1) { par(mar=c(4,2,0,0)) } else { par(mar=c(4,0,0,0)) }
   if (nrow(x[x$Bin.coord < 0 & x$X..Chromosome == ref[i],]) > 0) {
     plot(-x$Bin.coord[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], x$Relative.entropy[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=rev(range(x$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
     points(-x$Bin.coord[x$X..Chromosome == ref[i] & x$Adjusted.P.value <= qvalue & x$Bin.coord < 0], x$Relative.entropy[x$X..Chromosome == ref[i] & x$Adjusted.P.value <= qvalue & x$Bin.coord < 0], cex=0.5, pch=8, col="red")
@@ -1072,7 +1088,11 @@ for (i in seq_along(ref)) {
   } else {
     axis(1, xlim=c(0, refsize[i]), cex.axis=1.25)
   }
-  ifelse(i == 1, axis(2, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25), NA))
+  if (i == 1) {
+    axis(2, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25)
+  } else if (i == length(ref)) {
+    axis(4, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25)
+  }
 } 
 mtext("Forward strand position", side=3, line=1, outer=TRUE)
 mtext("Reverse strand position", side=1, line=1, outer=TRUE)
@@ -1094,29 +1114,49 @@ x <- read.table(output_ic, sep="\t", comment.char="", header=T, quote="")
 np <- length(ref) * 2
 s <- round(log10(refsize))
 s[1] <- s[1] + 1.5
-ifelse(length(ref) > 1, linepos <- rep(c(3,2,2,3), length(ref)/2), linepos <- 2)
+if (length(ref) > 1) {
+  linepos <- rep(c(3,2,2,3), length.out = length(ref))
+} else {
+  linepos <- 2
+}
 refpos <- rep(c(max(range(x$Relative.entropy)), max(range(x$Relative.entropy))-0.1), length(ref))
 png(output_png, width=1000, height=700)
 layout(matrix(1:np,2,np/2,byrow=TRUE),s); par(oma=c(3,2,3,1));
 for (i in seq_along(ref)) {
-  ifelse(i == 1, par(mar=c(0,2,4,0)), par(mar=c(0,0,4,0)))
-  plot(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i], c("Bin.coord","Relative.entropy")], type="o", cex=0.5, ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+  if (i == 1) { par(mar=c(0,2,4,0)) } else { par(mar=c(0,0,4,0)) }
+  if (nrow(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i],]) > 0) {
+    plot(x[x$Bin.coord >=0 & x$X..Chromosome == ref[i], c("Bin.coord","Relative.entropy")], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+  } else {
+    plot(0, 0, cex=0, xlim=c(0, refsize[i]), ylim=range(x$Relative.entropy), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+  }
   if (i %% 2 == 1) {
     mtext(ref[i], side=3, cex=0.75, line=linepos[i])
   } else {
-    axis(3, xlim=range(x$Bin.coord[x$X..Chromosome==ref[i] & x$Bin.coord >=0]), cex.axis=1.25)
+    axis(3, xlim=c(0, refsize[i]), cex.axis=1.25)
   }
-  ifelse(i == 1, axis(2, ylim=range(x$Relative.entropy), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=range(x$Relative.entropy), cex.axis=1.25), NA))
+  if (i == 1) {
+    axis(2, ylim=range(x$Relative.entropy), cex.axis=1.25)
+  } else if (i == length(ref)) {
+    axis(4, ylim=range(x$Relative.entropy), cex.axis=1.25)
+  }
 } 
 for (i in seq_along(ref)) {
-  ifelse(i == 1, par(mar=c(4,2,0,0)), par(mar=c(4,0,0,0)))
-  plot(-x$Bin.coord[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], x$Relative.entropy[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], type="o", cex=0.5, ylim=rev(range(x$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+  if (i == 1) { par(mar=c(4,2,0,0)) } else { par(mar=c(4,0,0,0)) }
+  if (nrow(x[x$Bin.coord < 0 & x$X..Chromosome == ref[i],]) > 0) {
+    plot(-x$Bin.coord[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], x$Relative.entropy[x$Bin.coord < 0 & x$X..Chromosome == ref[i]], type="o", cex=0.5, xlim=c(0, refsize[i]), ylim=rev(range(x$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+  } else {
+    plot(0, 0, cex=0, xlim=c(0, refsize[i]), ylim=rev(range(x$Relative.entropy)), xlab="", ylab="", xaxt="n", yaxt="n", axes=FALSE)
+  }
   if (i %% 2 == 0) {
     mtext(ref[i], side=1, cex=0.75, line=linepos[i])
   } else {
-    axis(1, xlim=range(x$Bin.coord[x$X..Chromosome==ref[i] & x$Bin.coord >=0]), cex.axis=1.25)
+    axis(1, xlim=c(0, refsize[i]), cex.axis=1.25)
   }
-  ifelse(i == 1, axis(2, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25), ifelse(i == length(ref), axis(4, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25), NA))
+  if (i == 1) {
+    axis(2, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25)
+  } else if (i == length(ref)) {
+    axis(4, ylim=rev(range(x$Relative.entropy)), cex.axis=1.25)
+  }
 } 
 mtext("Forward strand position", side=3, line=1, outer=TRUE)
 mtext("Reverse strand position", side=1, line=1, outer=TRUE)
