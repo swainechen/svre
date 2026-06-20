@@ -220,18 +220,24 @@ sub overlap {
 
 # check if given number is within an array of numbers
 sub pair_check {
-  # Security: harden against DoS by validating array reference and arguments
+  # Security: harden against DoS by validating array reference and arguments.
+  # This function is also hardened against a logic bypass vulnerability where
+  # a single match could incorrectly validate all subsequent elements in the
+  # input array due to state leakage of the response flag.
   return () if !defined $_[0] || ref($_[0]) ne 'ARRAY' || !defined $_[1];
   my @pairs = @{$_[0]}; # always pass the array as a reference to the sub when calling
   my $a_string = $_[1];  # joined (with ,) string of numbers or ranges 
-  my $pos = $_[2];
+  my $pos = $_[2] // 0;
   my @response = ();
-  my $response = 0;
 
+  # Ensure the wiggle room is non-negative and add a 10% buffer
+  $pos = abs($pos);
   $pos = $pos + 0.1*$pos;
 
   my @a = split(",", $a_string);
   foreach my $pair ( @pairs){
+    # Security: Reset the response flag for each pair to prevent logic bypass.
+    my $response = 0;
     foreach my $a (@a){
       if( $a !~ /\.\./ ){
         if( abs($pair) == abs($a)){
