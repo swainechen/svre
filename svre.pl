@@ -409,28 +409,36 @@ if (-B $r1) {
   open($rh1, "<", $r1) or die "Can't open $r1: $!\n";
 }
 while (<$rh1>) {
-#  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
-  if ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+mem/) {
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tXS:i:0(\t|\r?\n|$)/;
-#  } elsif ($mapper eq "bwa") {
-  } elsif ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+sam[ps]e/) {
-    next if $_ !~ /\tXT:A:U(\t|\r?\n|$)/;
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tXM:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tX0:i:1(\t|\r?\n|$)/;
-  } elsif ($mapper eq "Bowtie" || $mapper eq "bowtie") {
-    next if $_ !~ /\tXA:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-  } elsif ($mapper eq "Bowtie2" || $mapper eq "bowtie2") {
-    next if $_ !~ /\tXM:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tXG:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tXO:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-  } else {
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-  }
+  chomp;
   @f = split /\t/, $_;
+  # Security: harden SAM tag validation to prevent logic bypass from spoofed tags
+  # in QNAME, SEQ, or QUAL fields. Validate tags only in fields 12+ (index 11+).
+  my %tags = ();
+  for (my $tag_idx = 11; $tag_idx <= $#f; $tag_idx++) {
+    if ($f[$tag_idx] =~ /^([^:]+:[^:]+):(.*)$/) {
+      $tags{$1} = $2;
+    }
+  }
+
+  if ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+mem/) {
+    next if ($tags{"NM:i"} // "") ne "0";
+    next if ($tags{"XS:i"} // "") ne "0";
+  } elsif ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+sam[ps]e/) {
+    next if ($tags{"XT:A"} // "") ne "U";
+    next if ($tags{"NM:i"} // "") ne "0";
+    next if ($tags{"XM:i"} // "") ne "0";
+    next if ($tags{"X0:i"} // "") ne "1";
+  } elsif ($mapper eq "Bowtie" || $mapper eq "bowtie") {
+    next if ($tags{"XA:i"} // "") ne "0";
+    next if ($tags{"NM:i"} // "") ne "0";
+  } elsif ($mapper eq "Bowtie2" || $mapper eq "bowtie2") {
+    next if ($tags{"XM:i"} // "") ne "0";
+    next if ($tags{"XG:i"} // "") ne "0";
+    next if ($tags{"XO:i"} // "") ne "0";
+    next if ($tags{"NM:i"} // "") ne "0";
+  } else {
+    next if ($tags{"NM:i"} // "") ne "0";
+  }
   # sam flag 4 is unmapped, 16 is reverse strand map for the read
   next if $f[1] & 4;
   if ($mapq_min > 0) {
@@ -453,28 +461,36 @@ if (-B $r2) {
   open($rh2, "<", $r2) or die "Can't open $r2: $!\n";
 }
 while (<$rh2>){
-#  if ($mapper eq "bwa" && $mapper_version =~ /^0\.7\.10/) {
-  if ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+mem/) {
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tXS:i:0(\t|\r?\n|$)/;
-#  } elsif ($mapper eq "bwa") {
-  } elsif ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+sam[ps]e/) {
-    next if $_ !~ /\tXT:A:U(\t|\r?\n|$)/;
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tXM:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tX0:i:1(\t|\r?\n|$)/;
-  } elsif ($mapper eq "Bowtie" || $mapper eq "bowtie") {
-    next if $_ !~ /\tXA:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-  } elsif ($mapper eq "Bowtie2" || $mapper eq "bowtie2") {
-    next if $_ !~ /\tXM:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tXG:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tXO:i:0(\t|\r?\n|$)/;
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-  } else {
-    next if $_ !~ /\tNM:i:0(\t|\r?\n|$)/;
-  }
+  chomp;
   @f = split /\t/, $_;
+  # Security: harden SAM tag validation to prevent logic bypass from spoofed tags
+  # in QNAME, SEQ, or QUAL fields. Validate tags only in fields 12+ (index 11+).
+  my %tags = ();
+  for (my $tag_idx = 11; $tag_idx <= $#f; $tag_idx++) {
+    if ($f[$tag_idx] =~ /^([^:]+:[^:]+):(.*)$/) {
+      $tags{$1} = $2;
+    }
+  }
+
+  if ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+mem/) {
+    next if ($tags{"NM:i"} // "") ne "0";
+    next if ($tags{"XS:i"} // "") ne "0";
+  } elsif ($mapper eq "bwa" && $mapper_command_line =~ /bwa\s+sam[ps]e/) {
+    next if ($tags{"XT:A"} // "") ne "U";
+    next if ($tags{"NM:i"} // "") ne "0";
+    next if ($tags{"XM:i"} // "") ne "0";
+    next if ($tags{"X0:i"} // "") ne "1";
+  } elsif ($mapper eq "Bowtie" || $mapper eq "bowtie") {
+    next if ($tags{"XA:i"} // "") ne "0";
+    next if ($tags{"NM:i"} // "") ne "0";
+  } elsif ($mapper eq "Bowtie2" || $mapper eq "bowtie2") {
+    next if ($tags{"XM:i"} // "") ne "0";
+    next if ($tags{"XG:i"} // "") ne "0";
+    next if ($tags{"XO:i"} // "") ne "0";
+    next if ($tags{"NM:i"} // "") ne "0";
+  } else {
+    next if ($tags{"NM:i"} // "") ne "0";
+  }
   next if $f[1] & 4;
   if ($mapq_min > 0) {
     next if $f[4] < $mapq_min;
