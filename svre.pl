@@ -278,22 +278,22 @@ my $mapper = "";
 my $mapper_version = "";
 my $mapper_command_line = "";
 
-if ($r1 =~ /\.sam$/i) {
+if ($r1 =~ /\.sam\z/i) {
   open(my $ph, "-|", $samtools_command, "view", "-SH", "--", $r1) or die "Can't open samtools: $!\n";
   @samheader1 = <$ph>;
   close($ph) or die "Error closing samtools pipe: $!\n";
-} elsif ($r1 =~ /\.bam$/i) {
+} elsif ($r1 =~ /\.bam\z/i) {
   open(my $ph, "-|", $samtools_command, "view", "-H", "--", $r1) or die "Can't open samtools: $!\n";
   @samheader1 = <$ph>;
   close($ph) or die "Error closing samtools pipe: $!\n";
 } else {
   die "Can't figure out $r1 file type (sam/bam)\n";
 }
-if ($r2 =~ /\.sam$/i) {
+if ($r2 =~ /\.sam\z/i) {
   open(my $ph, "-|", $samtools_command, "view", "-SH", "--", $r2) or die "Can't open samtools: $!\n";
   @samheader2 = <$ph>;
   close($ph) or die "Error closing samtools pipe: $!\n";
-} elsif ($r2 =~ /\.bam$/i) {
+} elsif ($r2 =~ /\.bam\z/i) {
   open(my $ph, "-|", $samtools_command, "view", "-H", "--", $r2) or die "Can't open samtools: $!\n";
   @samheader2 = <$ph>;
   close($ph) or die "Error closing samtools pipe: $!\n";
@@ -409,13 +409,14 @@ if (-B $r1) {
   open($rh1, "<", $r1) or die "Can't open $r1: $!\n";
 }
 while (<$rh1>) {
-  chomp;
+  s/[\r\n]+\z//;
   @f = split /\t/, $_;
   # Security: harden SAM tag validation to prevent logic bypass from spoofed tags
   # in QNAME, SEQ, or QUAL fields. Validate tags only in fields 12+ (index 11+).
+  # Use \z anchor to prevent newline bypass.
   my %tags = ();
   for (my $tag_idx = 11; $tag_idx <= $#f; $tag_idx++) {
-    if ($f[$tag_idx] =~ /^([^:]+:[^:]+):(.*)$/) {
+    if ($f[$tag_idx] =~ /^([^:]+:[^:]+):(.*)\z/) {
       $tags{$1} = $2;
     }
   }
@@ -461,13 +462,14 @@ if (-B $r2) {
   open($rh2, "<", $r2) or die "Can't open $r2: $!\n";
 }
 while (<$rh2>){
-  chomp;
+  s/[\r\n]+\z//;
   @f = split /\t/, $_;
   # Security: harden SAM tag validation to prevent logic bypass from spoofed tags
   # in QNAME, SEQ, or QUAL fields. Validate tags only in fields 12+ (index 11+).
+  # Use \z anchor to prevent newline bypass.
   my %tags = ();
   for (my $tag_idx = 11; $tag_idx <= $#f; $tag_idx++) {
-    if ($f[$tag_idx] =~ /^([^:]+:[^:]+):(.*)$/) {
+    if ($f[$tag_idx] =~ /^([^:]+:[^:]+):(.*)\z/) {
       $tags{$1} = $2;
     }
   }
