@@ -272,38 +272,23 @@ __USAGE__
 #@@@@@@@@@@@@@@@@@@@@@@@
 # if reference files given, parse reference files to get reference names and length
 # adjust the length to be divisible by the y-window binning length
-my @samheader1 = ();
-my @samheader2 = ();
 my $mapper = "";
 my $mapper_version = "";
 my $mapper_command_line = "";
 
+# Security: Harden SAM header parsing to process lines one-by-line (prevents OOM DoS
+# when processing genomes with a massive number of scaffolds).
+my $ph;
 if ($r1 =~ /\.sam\z/i) {
-  open(my $ph, "-|", $samtools_command, "view", "-SH", "--", $r1) or die "Can't open samtools: $!\n";
-  @samheader1 = <$ph>;
-  close($ph) or die "Error closing samtools pipe: $!\n";
+  open($ph, "-|", $samtools_command, "view", "-SH", "--", $r1) or die "Can't open samtools: $!\n";
 } elsif ($r1 =~ /\.bam\z/i) {
-  open(my $ph, "-|", $samtools_command, "view", "-H", "--", $r1) or die "Can't open samtools: $!\n";
-  @samheader1 = <$ph>;
-  close($ph) or die "Error closing samtools pipe: $!\n";
+  open($ph, "-|", $samtools_command, "view", "-H", "--", $r1) or die "Can't open samtools: $!\n";
 } else {
   die "Can't figure out $r1 file type (sam/bam)\n";
 }
-if ($r2 =~ /\.sam\z/i) {
-  open(my $ph, "-|", $samtools_command, "view", "-SH", "--", $r2) or die "Can't open samtools: $!\n";
-  @samheader2 = <$ph>;
-  close($ph) or die "Error closing samtools pipe: $!\n";
-} elsif ($r2 =~ /\.bam\z/i) {
-  open(my $ph, "-|", $samtools_command, "view", "-H", "--", $r2) or die "Can't open samtools: $!\n";
-  @samheader2 = <$ph>;
-  close($ph) or die "Error closing samtools pipe: $!\n";
-} else {
-  die "Can't figure out $r2 file type (sam/bam)\n";
-}
-
-foreach $i (@samheader1) {
-  chomp $i;
-  @f = split /\t/, $i;
+while (my $line = <$ph>) {
+  $line =~ s/[\r\n]+\z//;
+  @f = split /\t/, $line;
   if ($f[0] eq '@SQ') {
     $ref = "";
     $j = 0;
@@ -331,9 +316,18 @@ foreach $i (@samheader1) {
     }
   }
 }
-foreach $i (@samheader2) {
-  chomp $i;
-  @f = split /\t/, $i;
+close($ph) or die "Error closing samtools pipe for r1 header: $!\n";
+
+if ($r2 =~ /\.sam\z/i) {
+  open($ph, "-|", $samtools_command, "view", "-SH", "--", $r2) or die "Can't open samtools: $!\n";
+} elsif ($r2 =~ /\.bam\z/i) {
+  open($ph, "-|", $samtools_command, "view", "-H", "--", $r2) or die "Can't open samtools: $!\n";
+} else {
+  die "Can't figure out $r2 file type (sam/bam)\n";
+}
+while (my $line = <$ph>) {
+  $line =~ s/[\r\n]+\z//;
+  @f = split /\t/, $line;
   if ($f[0] eq '@SQ') {
     $ref = "";
     $j = 0;
@@ -350,6 +344,7 @@ foreach $i (@samheader2) {
     }
   }
 }
+close($ph) or die "Error closing samtools pipe for r2 header: $!\n";
 if (! %$refh) {
   die "Error: No valid chromosomes found in SAM headers. Check that your BAM files have \@SQ lines.\n";
 }
@@ -399,6 +394,11 @@ if (! %$refh) {
 
 $read = {};	# keyed with read name, then r1/r2, ref/length/pos
 		# this will go away when we make $precount
+# Security: Limit the number of unique read names to prevent OOM DoS.
+# Use environment variable SVRE_MAX_READS to override the default limit.
+my $max_unique_reads = $ENV{SVRE_MAX_READS} // 10000000;
+my $unique_read_count = 0;
+
 @dist_total = ();
 $read_length_total = 0;
 $filter = 0;
@@ -444,6 +444,12 @@ while (<$rh1>) {
   next if $f[1] & 4;
   if ($mapq_min > 0) {
     next if $f[4] < $mapq_min;
+  }
+  if (!exists $read->{$f[0]}) {
+    if ($unique_read_count >= $max_unique_reads) {
+      die "Error: Too many unique read names ($unique_read_count). Maximum allowed is $max_unique_reads. If you have enough memory, you can increase this limit by setting the SVRE_MAX_READS environment variable.\n";
+    }
+    $unique_read_count++;
   }
   $read->{$f[0]}->{r1}->{ref} = $f[2];
   $read->{$f[0]}->{r1}->{length} = length($f[9]);
@@ -496,6 +502,12 @@ while (<$rh2>){
   next if $f[1] & 4;
   if ($mapq_min > 0) {
     next if $f[4] < $mapq_min;
+  }
+  if (!exists $read->{$f[0]}) {
+    if ($unique_read_count >= $max_unique_reads) {
+      die "Error: Too many unique read names ($unique_read_count). Maximum allowed is $max_unique_reads. If you have enough memory, you can increase this limit by setting the SVRE_MAX_READS environment variable.\n";
+    }
+    $unique_read_count++;
   }
   $read->{$f[0]}->{r2}->{ref} = $f[2];
   $read->{$f[0]}->{r2}->{length} = length($f[9]);
