@@ -174,8 +174,8 @@ die "Error: cov must be a valid number between 1 and 1,000,000\n" if !sv::isfloa
 die "Error: mapq must be a valid non-negative number\n" if !sv::isfloat($mapq_min) or $mapq_min < 0;
 
 # Security: Validate additional parameters
-die "Error: start must be a valid number\n" if !sv::isfloat($start);
-die "Error: end must be a valid number\n" if !sv::isfloat($end);
+die "Error: start must be a valid integer\n" if $start !~ /^([+-]?\d+)\z/;
+die "Error: end must be a valid integer\n" if $end !~ /^([+-]?\d+)\z/;
 die "Error: ori must be either FR or FF\n" if $ori ne "FR" and $ori ne "FF";
 die "Error: range must be a valid non-negative number\n" if !sv::isfloat($range_cluster) or $range_cluster < 0;
 
@@ -679,7 +679,7 @@ foreach $ref (keys %$pos) {
         push @{$precount->{$ref}->{$i}->{pair}}, @{$pos->{$ref}->{$i}->{pair}};
         next;
       }
-      if ($dist =~ /^(-?\d+)___(.*)/) {
+      if ($dist =~ /^([+-]?\d+)___(.*)\z/s) {
         my $location = $1;
         my $name = $2;
         $j = int ($location/$ywin) * $ywin;
@@ -1060,7 +1060,7 @@ foreach my $idx (0..$#refnames) {
 close($mh) or die "Error closing $ref_metadata_file: $!\n";
 
 #=begin GHOSTCODE
-$r_file = $tempdir."/r";
+$r_file = File::Spec->catfile($tempdir, "r");
 open(my $rh, ">", $r_file) or die "Cannot open $r_file: $!\n";
 if ($pval) {
 print $rh <<'__END__';
@@ -1247,7 +1247,7 @@ if ($pval) {
           $sv->{$dist}->{type} = "Translocation";
           $sv->{$dist}->{target} = $dist;	# should be format \d+___ref
           my $t_ref = $dist;
-          $t_ref =~ s/^-?\d+___//;
+          $t_ref =~ s/^([+-]?\d+)___//;
           my $t_pos = $dist;
           $t_pos =~ s/___.*\z//s;
           die "Error: Translocation target reference $t_ref not found in SAM header\n" if !defined $refh->{$t_ref};
@@ -1368,7 +1368,7 @@ if ($pval) {
               # Fix: Use the correct reference from the group being reported.
               # Security: Robustly strip metadata prefix to prevent variable contamination.
               $merge_sv->{$merge_i}->{bp2}->{ref} = $current_targets[0];
-              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.-?\d+)?___//;
+              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^([+-]?\d+)(?:\.\.([+-]?\d+))?___//;
               $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
               $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
               $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
@@ -1396,7 +1396,7 @@ if ($pval) {
           # Fix: Use the correct reference from the group being reported.
           # Security: Robustly strip metadata prefix to prevent variable contamination.
           $merge_sv->{$merge_i}->{bp2}->{ref} = $current_targets[0];
-          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^-?\d+(\.\.-?\d+)?___//;
+          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^([+-]?\d+)(?:\.\.([+-]?\d+))?___//;
           $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
           $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
           $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
@@ -1505,11 +1505,11 @@ close($dh) or die "Error closing $output_detail: $!\n";
 exit;
 
 sub keysort {
-  if (sv::isfloat($a) && sv::isfloat($b)) {
+  if ($a =~ /^([+-]?\d+)\z/ && $b =~ /^([+-]?\d+)\z/) {
     return $a <=> $b;
-  } elsif ($a =~ /^(-?\d+)___(\S+)\z/) {
+  } elsif ($a =~ /^([+-]?\d+)___(\S+)\z/) {
     my ($p1, $r1) = ($1, $2);
-    if ($b =~ /^(-?\d+)___(\S+)\z/) {
+    if ($b =~ /^([+-]?\d+)___(\S+)\z/) {
       my ($p2, $r2) = ($1, $2);
       if ($r1 eq $r2) {
         return $p1 <=> $p2;
@@ -1519,7 +1519,7 @@ sub keysort {
     } else {
       return 1; # a has suffix, b doesn't, so b comes first
     }
-  } elsif ($b =~ /^(-?\d+)___(\S+)\z/) {
+  } elsif ($b =~ /^([+-]?\d+)___(\S+)\z/) {
     return -1; # b has suffix, a doesn't, so a comes first
   } else {
     return $a cmp $b;

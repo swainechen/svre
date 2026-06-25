@@ -59,14 +59,14 @@ sub range {
         my ($p0_val, $r0_val, $p1_val, $r1_val);
 
         if (isfloat($left)) {
-          $p0_val = $left;
-        } elsif ($left =~ /^(-?\d+)___(\S+)\z/) {
+          $p0_val = $left + 0;
+        } elsif ($left =~ /^([+-]?\d+)___(\S+)\z/) {
           ($p0_val, $r0_val) = ($1, $2);
         }
 
         if (isfloat($right)) {
-          $p1_val = $right;
-        } elsif ($right =~ /^(-?\d+)___(\S+)\z/) {
+          $p1_val = $right + 0;
+        } elsif ($right =~ /^([+-]?\d+)___(\S+)\z/) {
           ($p1_val, $r1_val) = ($1, $2);
         }
 
@@ -86,15 +86,15 @@ sub range {
       @g = split /$ranger_re/, $f[$j];
       if ($#g == 0) {
         if (isfloat($g[0])) {
-          push @{$arrays->{__NUMBERS__}}, [$g[0], $g[0]];
-        } elsif ($g[0] =~ /^(-?\d+)___(\S+)\z/) {
+          push @{$arrays->{__NUMBERS__}}, [$g[0] + 0, $g[0] + 0];
+        } elsif ($g[0] =~ /^([+-]?\d+)___(\S+)\z/) {
           push @{$arrays->{$2}}, [$1, $1];
         }
       } elsif ($#g == 1) {
         my ($l, $ri) = ($g[0], $g[1]);
         my ($p0_v, $r0_v, $p1_v, $r1_v);
-        if (isfloat($l)) { $p0_v = $l; } elsif ($l =~ /^(-?\d+)___(\S+)\z/) { ($p0_v, $r0_v) = ($1, $2); }
-        if (isfloat($ri)) { $p1_v = $ri; } elsif ($ri =~ /^(-?\d+)___(\S+)\z/) { ($p1_v, $r1_v) = ($1, $2); }
+        if (isfloat($l)) { $p0_v = $l + 0; } elsif ($l =~ /^([+-]?\d+)___(\S+)\z/) { ($p0_v, $r0_v) = ($1, $2); }
+        if (isfloat($ri)) { $p1_v = $ri + 0; } elsif ($ri =~ /^([+-]?\d+)___(\S+)\z/) { ($p1_v, $r1_v) = ($1, $2); }
         if (defined $p0_v && defined $p1_v) {
           my $f_ref = $r0_v // $r1_v;
           my $t_key = defined $f_ref ? $f_ref : "__NUMBERS__";
@@ -154,12 +154,18 @@ sub absrange {	# same as above but return only absolute values
     next if !defined $i;
     if (isfloat($i)) {
       push @$abs_coords, abs($i);
-    } elsif ($i =~ /^(-?\d+)___(\S+)\z/) {
+    } elsif ($i =~ /^([+-]?\d+)___(\S+)\z/) {
       push @$abs_coords, abs($1) . "___" . $2;
     } else {
-      if ($i =~ /^(-?\d+)\.\.(-?\d+)(?:___(\S+))?\z/) {
-        my $suffix = defined $3 ? "___$3" : "";
-        push @$abs_coords, abs($1) . ".." . abs($2) . $suffix;
+      my @parts = split(/\.\./, $i, 2);
+      if (@parts == 2) {
+        my ($left, $right) = @parts;
+        my $suffix = "";
+        if ($right =~ s/___(\S+)\z//s) { $suffix = "___$1"; }
+        $left =~ s/___.*\z//s;
+        if (isfloat($left) && isfloat($right)) {
+          push @$abs_coords, abs($left) . ".." . abs($right) . $suffix;
+        }
       }
     }
   }
