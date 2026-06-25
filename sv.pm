@@ -60,14 +60,14 @@ sub range {
 
         if (isfloat($left)) {
           $p0_val = $left + 0;
-        } elsif ($left =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)___(\S+)\z/) {
-          ($p0_val, $r0_val) = ($1 + 0, $2);
+        } elsif ($left =~ /^([+-]?\d+)___(\S+)\z/) {
+          ($p0_val, $r0_val) = ($1, $2);
         }
 
         if (isfloat($right)) {
           $p1_val = $right + 0;
-        } elsif ($right =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)___(\S+)\z/) {
-          ($p1_val, $r1_val) = ($1 + 0, $2);
+        } elsif ($right =~ /^([+-]?\d+)___(\S+)\z/) {
+          ($p1_val, $r1_val) = ($1, $2);
         }
 
         if (defined $p0_val && defined $p1_val) {
@@ -87,14 +87,14 @@ sub range {
       if ($#g == 0) {
         if (isfloat($g[0])) {
           push @{$arrays->{__NUMBERS__}}, [$g[0] + 0, $g[0] + 0];
-        } elsif ($g[0] =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)___(\S+)\z/) {
-          push @{$arrays->{$2}}, [$1 + 0, $1 + 0];
+        } elsif ($g[0] =~ /^([+-]?\d+)___(\S+)\z/) {
+          push @{$arrays->{$2}}, [$1, $1];
         }
       } elsif ($#g == 1) {
         my ($l, $ri) = ($g[0], $g[1]);
         my ($p0_v, $r0_v, $p1_v, $r1_v);
-        if (isfloat($l)) { $p0_v = $l + 0; } elsif ($l =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)___(\S+)\z/) { ($p0_v, $r0_v) = ($1 + 0, $2); }
-        if (isfloat($ri)) { $p1_v = $ri + 0; } elsif ($ri =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)___(\S+)\z/) { ($p1_v, $r1_v) = ($1 + 0, $2); }
+        if (isfloat($l)) { $p0_v = $l + 0; } elsif ($l =~ /^([+-]?\d+)___(\S+)\z/) { ($p0_v, $r0_v) = ($1, $2); }
+        if (isfloat($ri)) { $p1_v = $ri + 0; } elsif ($ri =~ /^([+-]?\d+)___(\S+)\z/) { ($p1_v, $r1_v) = ($1, $2); }
         if (defined $p0_v && defined $p1_v) {
           my $f_ref = $r0_v // $r1_v;
           my $t_key = defined $f_ref ? $f_ref : "__NUMBERS__";
@@ -154,7 +154,7 @@ sub absrange {	# same as above but return only absolute values
     next if !defined $i;
     if (isfloat($i)) {
       push @$abs_coords, abs($i);
-    } elsif ($i =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)___(\S+)\z/) {
+    } elsif ($i =~ /^([+-]?\d+)___(\S+)\z/) {
       push @$abs_coords, abs($1) . "___" . $2;
     } else {
       my @parts = split(/\.\./, $i, 2);
