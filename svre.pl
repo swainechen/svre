@@ -1473,20 +1473,19 @@ if ($pval) {
           # Security: strip suffix before numeric comparison to ensure robustness
           my $val = $endpoint;
           $val =~ s/___.*\z//s;
-          if (sv::isfloat($val)) {
-            $merge_sv->{$k}->{sort} = $val if $merge_sv->{$k}->{sort} == 0;
-            $merge_sv->{$k}->{sort} = $val if $merge_sv->{$k}->{sort} > $val;
+          if ($val =~ /^([+-]?\d+)\z/) {
+            $merge_sv->{$k}->{sort} = $1 if $merge_sv->{$k}->{sort} == 0;
+            $merge_sv->{$k}->{sort} = $1 if $merge_sv->{$k}->{sort} > $1;
           }
         }
       }
       # these are all supposed to be ranged and positive now
       my ($bp1_start, $bp2_start);
-      # Security: Use hardened regex for extraction
-      if ($merge_sv->{$k}->{bp1}->{coord} =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)/) {
-        $bp1_start = $1 + 0;
+      if ($merge_sv->{$k}->{bp1}->{coord} =~ /^([+-]?\d+)/) {
+        $bp1_start = $1;
       }
-      if ($merge_sv->{$k}->{bp2}->{coord} =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)/) {
-        $bp2_start = $1 + 0;
+      if ($merge_sv->{$k}->{bp2}->{coord} =~ /^([+-]?\d+)/) {
+        $bp2_start = $1;
       }
       if (defined $bp1_start && defined $bp2_start && $bp1_start > $bp2_start) {
         my $temp = $merge_sv->{$k}->{bp1};
@@ -1506,18 +1505,20 @@ close($dh) or die "Error closing $output_detail: $!\n";
 exit;
 
 sub keysort {
-  my $num_re = qr/([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)/;
-  if ($a =~ /^$num_re\z/) {
+  my $coord_re = qr/^([+-]?\d+)\z/;
+  my $suffix_re = qr/^([+-]?\d+)___(\S+)\z/;
+
+  if ($a =~ $coord_re) {
     my $v1 = $1;
-    if ($b =~ /^$num_re\z/) {
+    if ($b =~ $coord_re) {
       return $v1 <=> $1;
     }
   }
 
-  if ($a =~ /^${num_re}___(\S+)\z/) {
-    my ($p1, $r1) = ($1 + 0, $2);
-    if ($b =~ /^${num_re}___(\S+)\z/) {
-      my ($p2, $r2) = ($1 + 0, $2);
+  if ($a =~ $suffix_re) {
+    my ($p1, $r1) = ($1, $2);
+    if ($b =~ $suffix_re) {
+      my ($p2, $r2) = ($1, $2);
       if ($r1 eq $r2) {
         return $p1 <=> $p2;
       } else {
@@ -1526,7 +1527,7 @@ sub keysort {
     } else {
       return 1; # a has suffix, b doesn't, so b comes first
     }
-  } elsif ($b =~ /^${num_re}___(\S+)\z/) {
+  } elsif ($b =~ $suffix_re) {
     return -1; # b has suffix, a doesn't, so a comes first
   } else {
     return $a cmp $b;
