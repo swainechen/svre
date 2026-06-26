@@ -1481,11 +1481,12 @@ if ($pval) {
       }
       # these are all supposed to be ranged and positive now
       my ($bp1_start, $bp2_start);
-      if ($merge_sv->{$k}->{bp1}->{coord} =~ /(^\d+)/) {
-        $bp1_start = $1;
+      # Security: Use hardened regex for extraction
+      if ($merge_sv->{$k}->{bp1}->{coord} =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)/) {
+        $bp1_start = $1 + 0;
       }
-      if ($merge_sv->{$k}->{bp2}->{coord} =~ /(^\d+)/) {
-        $bp2_start = $1;
+      if ($merge_sv->{$k}->{bp2}->{coord} =~ /^([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)/) {
+        $bp2_start = $1 + 0;
       }
       if (defined $bp1_start && defined $bp2_start && $bp1_start > $bp2_start) {
         my $temp = $merge_sv->{$k}->{bp1};
@@ -1505,12 +1506,18 @@ close($dh) or die "Error closing $output_detail: $!\n";
 exit;
 
 sub keysort {
-  if ($a =~ /^([+-]?\d+)\z/ && $b =~ /^([+-]?\d+)\z/) {
-    return $a <=> $b;
-  } elsif ($a =~ /^([+-]?\d+)___(\S+)\z/) {
-    my ($p1, $r1) = ($1, $2);
-    if ($b =~ /^([+-]?\d+)___(\S+)\z/) {
-      my ($p2, $r2) = ($1, $2);
+  my $num_re = qr/([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)/;
+  if ($a =~ /^$num_re\z/) {
+    my $v1 = $1;
+    if ($b =~ /^$num_re\z/) {
+      return $v1 <=> $1;
+    }
+  }
+
+  if ($a =~ /^${num_re}___(\S+)\z/) {
+    my ($p1, $r1) = ($1 + 0, $2);
+    if ($b =~ /^${num_re}___(\S+)\z/) {
+      my ($p2, $r2) = ($1 + 0, $2);
       if ($r1 eq $r2) {
         return $p1 <=> $p2;
       } else {
@@ -1519,7 +1526,7 @@ sub keysort {
     } else {
       return 1; # a has suffix, b doesn't, so b comes first
     }
-  } elsif ($b =~ /^([+-]?\d+)___(\S+)\z/) {
+  } elsif ($b =~ /^${num_re}___(\S+)\z/) {
     return -1; # b has suffix, a doesn't, so a comes first
   } else {
     return $a cmp $b;
