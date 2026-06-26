@@ -25,6 +25,10 @@ use Getopt::Long;
 use List::Util qw(min max sum);
 use File::Spec;
 
+# Security: hardened regex to support scientific notation and floats in coordinates
+# Use \z to prevent newline bypass vulnerabilities
+our $RE_FLOAT = $sv::RE_FLOAT;
+
 #@@@@@@@@@@@
 # Variables 
 #@@@@@@@@@@@
@@ -679,7 +683,7 @@ foreach $ref (keys %$pos) {
         push @{$precount->{$ref}->{$i}->{pair}}, @{$pos->{$ref}->{$i}->{pair}};
         next;
       }
-      if ($dist =~ /^([+-]?\d+)___(.*)\z/s) {
+      if ($dist =~ /^${RE_FLOAT}___(.*)\z/s) {
         my $location = $1;
         my $name = $2;
         $j = int ($location/$ywin) * $ywin;
@@ -1247,7 +1251,7 @@ if ($pval) {
           $sv->{$dist}->{type} = "Translocation";
           $sv->{$dist}->{target} = $dist;	# should be format \d+___ref
           my $t_ref = $dist;
-          $t_ref =~ s/^([+-]?\d+)___//;
+          $t_ref =~ s/^${RE_FLOAT}___//;
           my $t_pos = $dist;
           $t_pos =~ s/___.*\z//s;
           die "Error: Translocation target reference $t_ref not found in SAM header\n" if !defined $refh->{$t_ref};
@@ -1368,7 +1372,7 @@ if ($pval) {
               # Fix: Use the correct reference from the group being reported.
               # Security: Robustly strip metadata prefix to prevent variable contamination.
               $merge_sv->{$merge_i}->{bp2}->{ref} = $current_targets[0];
-              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^([+-]?\d+)(?:\.\.([+-]?\d+))?___//;
+              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^${RE_FLOAT}(?:\.\.${RE_FLOAT})?___//;
               $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
               $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
               $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
@@ -1396,7 +1400,7 @@ if ($pval) {
           # Fix: Use the correct reference from the group being reported.
           # Security: Robustly strip metadata prefix to prevent variable contamination.
           $merge_sv->{$merge_i}->{bp2}->{ref} = $current_targets[0];
-          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^([+-]?\d+)(?:\.\.([+-]?\d+))?___//;
+          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^${RE_FLOAT}(?:\.\.${RE_FLOAT})?___//;
           $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
           $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
           $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
@@ -1505,12 +1509,10 @@ close($dh) or die "Error closing $output_detail: $!\n";
 exit;
 
 sub keysort {
-  if ($a =~ /^([+-]?\d+)\z/ && $b =~ /^([+-]?\d+)\z/) {
+  if ($a =~ /^${RE_FLOAT}\z/ && $b =~ /^${RE_FLOAT}\z/) {
     return $a <=> $b;
-  } elsif ($a =~ /^([+-]?\d+)___(\S+)\z/) {
-    my ($p1, $r1) = ($1, $2);
-    if ($b =~ /^([+-]?\d+)___(\S+)\z/) {
-      my ($p2, $r2) = ($1, $2);
+  } elsif (my ($p1, $r1) = $a =~ /^${RE_FLOAT}___(\S+)\z/) {
+    if (my ($p2, $r2) = $b =~ /^${RE_FLOAT}___(\S+)\z/) {
       if ($r1 eq $r2) {
         return $p1 <=> $p2;
       } else {
@@ -1519,7 +1521,7 @@ sub keysort {
     } else {
       return 1; # a has suffix, b doesn't, so b comes first
     }
-  } elsif ($b =~ /^([+-]?\d+)___(\S+)\z/) {
+  } elsif ($b =~ /^${RE_FLOAT}___(\S+)\z/) {
     return -1; # b has suffix, a doesn't, so a comes first
   } else {
     return $a cmp $b;
