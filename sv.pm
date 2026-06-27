@@ -28,9 +28,12 @@ use Math::Trig;
 use Math::BigFloat;
 use List::Util qw(min max sum);
 
-# Security: hardened regex to support scientific notation and floats in coordinates
+# Security: hardened regex to support scientific notation and floats
 # Use \z to prevent newline bypass vulnerabilities
 our $RE_FLOAT = qr/([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)/;
+
+# Security: coordinate regex strictly for integers as per user feedback
+our $RE_INT = qr/([+-]?\d+)/;
 
 #--------------------------------------------------------------
 # Sub-routines
@@ -63,15 +66,15 @@ sub range {
         my ($left, $right) = ($1, $2);
         my ($p0_val, $r0_val, $p1_val, $r1_val);
 
-        if ($left =~ /^${RE_FLOAT}\z/) {
+        if ($left =~ /^${RE_INT}\z/) {
           $p0_val = $left + 0;
-        } elsif ($left =~ /^${RE_FLOAT}___(\S+)\z/) {
+        } elsif ($left =~ /^${RE_INT}___(\S+)\z/) {
           ($p0_val, $r0_val) = ($1, $2);
         }
 
-        if ($right =~ /^${RE_FLOAT}\z/) {
+        if ($right =~ /^${RE_INT}\z/) {
           $p1_val = $right + 0;
-        } elsif ($right =~ /^${RE_FLOAT}___(\S+)\z/) {
+        } elsif ($right =~ /^${RE_INT}___(\S+)\z/) {
           ($p1_val, $r1_val) = ($1, $2);
         }
 
@@ -90,16 +93,16 @@ sub range {
       }
       @g = split /$ranger_re/, $f[$j];
       if ($#g == 0) {
-        if ($g[0] =~ /^${RE_FLOAT}\z/) {
+        if ($g[0] =~ /^${RE_INT}\z/) {
           push @{$arrays->{__NUMBERS__}}, [$g[0] + 0, $g[0] + 0];
-        } elsif ($g[0] =~ /^${RE_FLOAT}___(\S+)\z/) {
+        } elsif ($g[0] =~ /^${RE_INT}___(\S+)\z/) {
           push @{$arrays->{$2}}, [$1, $1];
         }
       } elsif ($#g == 1) {
         my ($l, $ri) = ($g[0], $g[1]);
         my ($p0_v, $r0_v, $p1_v, $r1_v);
-        if ($l =~ /^${RE_FLOAT}\z/) { $p0_v = $l + 0; } elsif ($l =~ /^${RE_FLOAT}___(\S+)\z/) { ($p0_v, $r0_v) = ($1, $2); }
-        if ($ri =~ /^${RE_FLOAT}\z/) { $p1_v = $ri + 0; } elsif ($ri =~ /^${RE_FLOAT}___(\S+)\z/) { ($p1_v, $r1_v) = ($1, $2); }
+        if ($l =~ /^${RE_INT}\z/) { $p0_v = $l + 0; } elsif ($l =~ /^${RE_INT}___(\S+)\z/) { ($p0_v, $r0_v) = ($1, $2); }
+        if ($ri =~ /^${RE_INT}\z/) { $p1_v = $ri + 0; } elsif ($ri =~ /^${RE_INT}___(\S+)\z/) { ($p1_v, $r1_v) = ($1, $2); }
         if (defined $p0_v && defined $p1_v) {
           my $f_ref = $r0_v // $r1_v;
           my $t_key = defined $f_ref ? $f_ref : "__NUMBERS__";
@@ -157,9 +160,9 @@ sub absrange {	# same as above but return only absolute values
   my $i;
   foreach $i (@$a_ref) {
     next if !defined $i;
-    if ($i =~ /^${RE_FLOAT}\z/) {
+    if ($i =~ /^${RE_INT}\z/) {
       push @$abs_coords, abs($i);
-    } elsif ($i =~ /^${RE_FLOAT}___(\S+)\z/) {
+    } elsif ($i =~ /^${RE_INT}___(\S+)\z/) {
       push @$abs_coords, abs($1) . "___" . $2;
     } else {
       my @parts = split(/\.\./, $i, 2);
