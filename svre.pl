@@ -1374,7 +1374,7 @@ if ($pval) {
               # Fix: Use the correct reference from the group being reported.
               # Security: Robustly strip metadata prefix to prevent variable contamination.
               $merge_sv->{$merge_i}->{bp2}->{ref} = $current_targets[0];
-              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^\${RE_INT}(?:\.\.\${RE_INT})?___//;
+              $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^${RE_INT}(?:\.\.${RE_INT})?___//;
               $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
               $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
               $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
@@ -1402,7 +1402,7 @@ if ($pval) {
           # Fix: Use the correct reference from the group being reported.
           # Security: Robustly strip metadata prefix to prevent variable contamination.
           $merge_sv->{$merge_i}->{bp2}->{ref} = $current_targets[0];
-          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^\${RE_INT}(?:\.\.\${RE_INT})?___//;
+          $merge_sv->{$merge_i}->{bp2}->{ref} =~ s/^${RE_INT}(?:\.\.${RE_INT})?___//;
           $merge_sv->{$merge_i}->{bp1}->{coord} = abs($bin) . ".." . (abs($bin) + $ri->{$ref}->{$bin}->{binsize} + 1);	# to make sure we overlap later with the next bin
           $merge_sv->{$merge_i}->{bp2}->{coord} = sv::absrange(\@current_targets, $range_cluster);
           $merge_sv->{$merge_i}->{bp2}->{coord} =~ s/___.*\z//s;
