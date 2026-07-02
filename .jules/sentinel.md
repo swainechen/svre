@@ -171,3 +171,8 @@
 **Vulnerability:** The `sv::ric` function in `sv.pm` was susceptible to data corruption and script crashes (DoS) when processing chromosomes with exactly one small genomic bin. Due to Perl's negative array indexing, a check for the "previous" bin (`$sortbin[$#sortbin - 1]`) would return the first bin itself if only one existed, causing the bin to merge with itself (doubling its count) and then delete itself.
 **Learning:** In languages that support negative array indexing (like Perl or Python), boundary checks using offsets from the array length must explicitly verify that the array has sufficient elements to prevent unintentional self-reference or wrap-around behavior.
 **Prevention:** Always use `scalar(@array) >= N` or explicit index bounds checks before accessing array elements using negative offsets or calculated indices near the boundaries.
+
+## 2026-06-25 - Data Integrity Loss via Incorrect Sentinel Initialization
+**Vulnerability:** Structural variation (SV) sorting logic in `svre.pl` used `0` as a sentinel value for initializing the minimum coordinate (`sort` field). If an SV started at coordinate `0`, the logic incorrectly treated it as "not yet initialized" and could overwrite it with a larger coordinate from another part of the SV range (e.g., `0..100` became sorted at `100`).
+**Learning:** In Perl, using `0` or `""` as a sentinel for numeric minimums is dangerous because they are valid values. This can lead to non-deterministic sorting and inconsistent data reporting in genomic tools.
+**Prevention:** Always use `undef` to initialize tracking variables for numeric aggregates. Use `!defined $var || $new_val < $var` to correctly handle the first assignment, ensuring that `0` is treated as a valid data point.

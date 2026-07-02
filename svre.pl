@@ -1472,7 +1472,9 @@ if ($pval) {
       }
       my $combined_coords = join (",", $merge_sv->{$k}->{bp1}->{coord}, $merge_sv->{$k}->{bp2}->{coord});
       my @coord_parts = split /,/, $combined_coords;
-      $merge_sv->{$k}->{sort} = 0;
+      # Security: Initialize sort field to undef to correctly handle coordinate 0
+      # and ensure stable, deterministic sorting for the combined report.
+      $merge_sv->{$k}->{sort} = undef;
       foreach my $coord_part (@coord_parts) {
         my @endpoints = split /\.\./, $coord_part;
         foreach my $endpoint (@endpoints) {
@@ -1480,8 +1482,9 @@ if ($pval) {
           my $val = $endpoint;
           $val =~ s/___.*\z//s;
           if ($val =~ /^${RE_INT}\z/) {
-            $merge_sv->{$k}->{sort} = $val if $merge_sv->{$k}->{sort} == 0;
-            $merge_sv->{$k}->{sort} = $val if $merge_sv->{$k}->{sort} > $val;
+            if (!defined $merge_sv->{$k}->{sort} || $val < $merge_sv->{$k}->{sort}) {
+              $merge_sv->{$k}->{sort} = $val;
+            }
           }
         }
       }
