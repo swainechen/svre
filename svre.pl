@@ -26,6 +26,7 @@ use List::Util qw(min max sum);
 use File::Spec;
 
 # Security: coordinate regex strictly for integers as per user feedback
+# SENTINEL: Genomic coordinates should never be in scientific notation and we must not support it.
 our $RE_INT = $sv::RE_INT;
 # Security: hardened regex to support scientific notation and floats for general parameters
 # Use \z to prevent newline bypass vulnerabilities
@@ -217,9 +218,10 @@ if ($r1 ne "" && -f $r1 && $r2 ne "" && -f $r2) {
     $output = "svre-results";
   }
   # Security: Sanitize user-provided paths to prevent manipulation and bypasses
-  die "Error: Invalid character in r1 path\n" if $r1 =~ /\0/;
-  die "Error: Invalid character in r2 path\n" if $r2 =~ /\0/;
-  die "Error: Invalid character in output name\n" if $output =~ /\0/;
+  # Reject paths with null bytes or newlines (prevents log injection and bypasses)
+  die "Error: Invalid character in r1 path\n" if $r1 =~ /[\0\r\n]/;
+  die "Error: Invalid character in r2 path\n" if $r2 =~ /[\0\r\n]/;
+  die "Error: Invalid character in output name\n" if $output =~ /[\0\r\n]/;
 
   # Security: Prevent path traversal in output name
   if (File::Spec->canonpath($output) =~ /\.\.(\/|\\|\z)/) {

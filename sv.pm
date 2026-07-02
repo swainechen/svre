@@ -33,6 +33,7 @@ use List::Util qw(min max sum);
 our $RE_FLOAT = qr/([+-]?(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee][+-]?\d+)?)/;
 
 # Security: coordinate regex strictly for integers as per user feedback
+# SENTINEL: Genomic coordinates should never be in scientific notation and we must not support it.
 our $RE_INT = qr/([+-]?\d+)/;
 
 #--------------------------------------------------------------
